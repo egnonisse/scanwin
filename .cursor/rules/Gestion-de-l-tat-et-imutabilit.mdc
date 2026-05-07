@@ -1,0 +1,8 @@
+---
+alwaysApply: true
+---
+
+- Utiliser le package flutter_bloc avec des Cubits pour une séparation claire UI/logique.
+- Déclarer tous les widgets qui ne dépendent pas de l’état comme étant const.
+- Éviter les setState lorsque le widget pourrait être stateless.
+- Ne jamais exposer des mutable objects hors du cubit – retourner des copies immutables.

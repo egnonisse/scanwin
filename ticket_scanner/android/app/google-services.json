@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "44901635530",
+    "project_id": "boostsocial-a7720",
+    "storage_bucket": "boostsocial-a7720.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:44901635530:android:8456fd3a51fdb5a549eb33",
+        "android_client_info": {
+          "package_name": "com.example.ticket_scanner"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA_sxVJ9EkwnRBbXcpJQ6s_0af55EXHH-Y"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

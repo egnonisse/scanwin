@@ -1,0 +1,10 @@
+---
+alwaysApply: true
+---
+
+- Toujours utiliser une architecture modulaire (Clean Architecture par feature).
+- Chaque feature (auth, scanner, profile) possède son propre dossier sous lib/features/<feature> avec les couches : data, domain, presentation.
+- Les dépendances entre features passent uniquement par la couche domain.
+- Les packages partagés (composants UI réutilisables, helpers) vont dans lib/core/.
+- Ne pas mélanger la logique métier avec les widgets UI – utiliser BLoC/Cubit ou Riverpod pour la gestion d'état.
+- Respecter les conventions de nommage Dart (camelCase pour variables/fonctions, PascalCase pour classes/widgets, snake_case pour fichiers/dossiers).

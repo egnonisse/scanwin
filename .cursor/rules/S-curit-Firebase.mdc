@@ -1,0 +1,9 @@
+---
+alwaysApply: true
+---
+
+- Les règles Firestore doivent suivre le principe du moindre privilège : un utilisateur ne peut lire / modifier que son propre document.
+- La collection scannedTickets est uniquement accessible en écriture par la Cloud Function (la lecture côté client est possible pour vérifier l'unicité, mais pas de write).
+- Utiliser Firebase App Check en production (Play Integrity pour Android, Device Check pour iOS).
+- Ne jamais stocker de secrets (clés d'API) dans le code source ou les fichiers de config. Utiliser Firebase Remote Config ou variables d'environnement.
+- Toujours vérifier l'authentification côté Cloud Function avec context.auth.uid.

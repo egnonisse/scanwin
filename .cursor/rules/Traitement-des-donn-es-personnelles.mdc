@@ -1,0 +1,8 @@
+---
+alwaysApply: true
+---
+
+- Les images des tickets ne doivent jamais quitter l'appareil (OCR on-device uniquement).
+- La Privacy Policy doit être accessible depuis l'interface de l'app (menu Réglages).
+- Toute collecte de données (ticket ID, montant) doit avoir un but clairement explicité.
+- Prévoir un mécanisme de suppression de compte et des données associées.

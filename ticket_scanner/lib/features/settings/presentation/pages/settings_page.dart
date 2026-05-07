@@ -1,0 +1,68 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+
+import '../cubit/settings_cubit.dart';
+import '../cubit/settings_state.dart';
+
+class SettingsPage extends StatelessWidget {
+  const SettingsPage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Réglages')),
+      body: BlocBuilder<SettingsCubit, SettingsState>(
+        builder: (context, state) {
+          final cubit = context.read<SettingsCubit>();
+
+          return ListView(
+            padding: const EdgeInsets.all(16),
+            children: [
+              Text(
+                'Devise',
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
+              const SizedBox(height: 8),
+              InputDecorator(
+                decoration: const InputDecoration(
+                  labelText: 'Devise d’affichage',
+                  border: OutlineInputBorder(),
+                ),
+                child: DropdownButtonHideUnderline(
+                  child: DropdownButton<String>(
+                    value: state.currencyCode,
+                    isExpanded: true,
+                    items: SettingsCubit.supportedCurrencies()
+                        .map(
+                          (c) => DropdownMenuItem(
+                            value: c,
+                            child: Text(c),
+                          ),
+                        )
+                        .toList(),
+                    onChanged: state.isLoading
+                        ? null
+                        : (value) {
+                            if (value == null) return;
+                            cubit.setCurrencyCode(value);
+                          },
+                  ),
+                ),
+              ),
+              if (state.errorMessage != null) ...[
+                const SizedBox(height: 12),
+                Text(
+                  state.errorMessage!,
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.error,
+                  ),
+                ),
+              ],
+            ],
+          );
+        },
+      ),
+    );
+  }
+}
+

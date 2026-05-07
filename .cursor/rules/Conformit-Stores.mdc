@@ -1,0 +1,8 @@
+---
+alwaysApply: true
+---
+
+- Les demandes de permission (caméra, galerie) doivent être précédées d’une boîte de dialogue explicative.
+- Les textes de permission (NSCameraUsageDescription, etc.) doivent décrire concrètement l’utilisation.
+- Aucun achat de points avec argent réel sans intégration Play Billing / In-App Purchase.
+- Ne pas inciter l'utilisateur à noter l'application en échange de points.
