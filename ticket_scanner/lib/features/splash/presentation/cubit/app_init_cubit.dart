@@ -56,6 +56,29 @@ class AppInitCubit extends Cubit<AppInitState> {
       });
 
       emit(state.copyWith(status: AppInitStatus.ready));
+    } on FirebaseAuthException catch (e) {
+      final hint = switch (e.code) {
+        'admin-restricted-operation' ||
+        'operation-not-allowed' ||
+        'auth/admin-restricted-operation' ||
+        'auth/operation-not-allowed' =>
+          "Action requise dans Firebase Console :\n"
+              "- Authentication → Sign-in method\n"
+              "- Activer le provider **Anonymous**\n\n"
+              "Ensuite, relance l’app.",
+        _ => null,
+      };
+
+      emit(
+        state.copyWith(
+          status: AppInitStatus.error,
+          errorMessage: [
+            'Initialisation Firebase impossible (Auth).',
+            if (hint != null) hint,
+            'Détail: [${e.code}] ${e.message ?? ''}'.trim(),
+          ].where((s) => s.trim().isNotEmpty).join('\n\n'),
+        ),
+      );
     } catch (e) {
       emit(
         state.copyWith(
