@@ -7,14 +7,14 @@ class PointsEventModel {
     required this.id,
     required this.pointsAdded,
     required this.createdAt,
-    required this.ticketId,
+    required this.receiptId,
     required this.amount,
   });
 
   final String id;
   final int pointsAdded;
   final Timestamp? createdAt;
-  final String? ticketId;
+  final String? receiptId;
   final num? amount;
 
   PointsEvent toEntity() {
@@ -22,7 +22,7 @@ class PointsEventModel {
       id: id,
       pointsAdded: pointsAdded,
       createdAtMillis: (createdAt?.millisecondsSinceEpoch) ?? 0,
-      ticketId: ticketId,
+      receiptId: receiptId,
       amount: amount?.toDouble(),
     );
   }
@@ -33,7 +33,7 @@ class PointsEventModel {
       id: doc.id,
       pointsAdded: (data['pointsAdded'] as num?)?.toInt() ?? 0,
       createdAt: data['createdAt'] as Timestamp?,
-      ticketId: data['ticketId'] as String?,
+      receiptId: data['receiptId'] as String?,
       amount: data['amount'] as num?,
     );
   }

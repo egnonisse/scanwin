@@ -55,6 +55,9 @@ class AppInitCubit extends Cubit<AppInitState> {
         }
       });
 
+      // La devise cloud a priorité sur la devise locale.
+      await _settingsCubit.syncWithCloud();
+
       emit(state.copyWith(status: AppInitStatus.ready));
     } on FirebaseAuthException catch (e) {
       final hint = switch (e.code) {

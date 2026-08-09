@@ -2,12 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../domain/entities/ticket_extraction.dart';
-import '../../domain/services/ticket_parser.dart';
+import '../../domain/entities/receipt_extraction.dart';
+import '../../domain/services/receipt_parser.dart';
 import '../cubit/scanner_cubit.dart';
 import '../cubit/scanner_state.dart';
-import '../../../settings/presentation/cubit/settings_cubit.dart';
-import '../../../settings/presentation/cubit/settings_state.dart';
 
 class ScannerPage extends StatelessWidget {
   const ScannerPage({super.key});
@@ -21,8 +19,8 @@ class ScannerPage extends StatelessWidget {
         return AlertDialog(
           title: const Text('Autoriser la caméra ?'),
           content: const Text(
-            "Nous utilisons la caméra pour scanner votre ticket restaurant et "
-            'en extraire les informations (montant, date, numéro de ticket).',
+            "Nous utilisons la caméra pour scanner votre reçu de pharmacie "
+            'et en extraire les informations (pharmacie, date, médicaments, prix).',
           ),
           actions: [
             TextButton(
@@ -56,10 +54,10 @@ class ScannerPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
-      create: (_) => ScannerCubit(parser: const TicketParser()),
+      create: (_) => ScannerCubit(parser: const ReceiptParser()),
       child: Scaffold(
         appBar: AppBar(
-          title: const Text('Scanner un ticket'),
+          title: const Text('Scanner un reçu'),
         ),
         body: Padding(
           padding: const EdgeInsets.all(16),
@@ -74,7 +72,9 @@ class ScannerPage extends StatelessWidget {
                         ? null
                         : () => _requestPermissionAndScan(context),
                     icon: const Icon(Icons.camera_alt),
-                    label: Text(state.isLoading ? 'OCR en cours...' : 'Prendre une photo'),
+                    label: Text(
+                      state.isLoading ? 'OCR en cours...' : 'Prendre une photo',
+                    ),
                   ),
                   if (state.errorMessage != null) ...[
                     const SizedBox(height: 12),
@@ -94,26 +94,16 @@ class ScannerPage extends StatelessWidget {
                     const SizedBox(height: 12),
                     _ExtractionCard(extraction: extraction),
                     const SizedBox(height: 16),
-                    Builder(
-                      builder: (context) {
-                        // On lit la devise via SettingsCubit pour afficher un montant formaté.
-                        return BlocBuilder<SettingsCubit, SettingsState>(
-                          builder: (context, settings) {
-                            return FilledButton.icon(
-                              onPressed: () {
-                                // On envoie même si certains champs sont null :
-                                // la page de confirmation laissera l’utilisateur éditer.
-                                context.push(
-                                  '/confirmation',
-                                  extra: extraction,
-                                );
-                              },
-                              icon: const Icon(Icons.check),
-                              label: const Text('Continuer'),
-                            );
-                          },
-                        );
-                      },
+                    FilledButton.icon(
+                      onPressed: extraction.isValidForMvp
+                          ? () {
+                              // On envoie même si certains champs sont null :
+                              // la page de confirmation laissera l'utilisateur éditer.
+                              context.push('/confirmation', extra: extraction);
+                            }
+                          : null,
+                      icon: const Icon(Icons.check),
+                      label: const Text('Continuer'),
                     ),
                   ],
                 ],
@@ -129,15 +119,13 @@ class ScannerPage extends StatelessWidget {
 class _ExtractionCard extends StatelessWidget {
   const _ExtractionCard({required this.extraction});
 
-  final TicketExtraction extraction;
+  final ReceiptExtraction extraction;
 
   @override
   Widget build(BuildContext context) {
-    // Devise gérée ailleurs (SettingsCubit). Ici on affiche brut si montant détecté.
-    final montantTotal = extraction.montantTotal;
-    final montantText = montantTotal == null
+    final montantText = extraction.montantTotal == null
         ? '—'
-        : montantTotal.toStringAsFixed(2);
+        : extraction.montantTotal!.toStringAsFixed(2);
 
     return Card(
       child: Padding(
@@ -145,17 +133,29 @@ class _ExtractionCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('ID ticket : ${extraction.ticketId ?? '—'}'),
+            Text('Pharmacie : ${extraction.pharmacyName ?? '—'}'),
+            const SizedBox(height: 8),
+            Text('Date : ${extraction.dateTicket ?? '—'}'),
             const SizedBox(height: 8),
             Text('Montant total : $montantText'),
-            const SizedBox(height: 8),
-            Text('Date ticket : ${extraction.dateTicket ?? '—'}'),
-            const SizedBox(height: 8),
-            Text('Enseigne : ${extraction.enseigne ?? '—'}'),
+            const SizedBox(height: 12),
+            Text(
+              'Médicaments (${extraction.items.length})',
+              style: Theme.of(context).textTheme.titleSmall,
+            ),
+            const SizedBox(height: 4),
+            if (extraction.items.isEmpty)
+              const Text('Aucun médicament détecté.')
+            else
+              ...extraction.items.map(
+                (item) => Text(
+                  '• ${item.name} : ${item.price.toStringAsFixed(2)}'
+                  '${item.quantity > 1 ? ' (x${item.quantity})' : ''}',
+                ),
+              ),
           ],
         ),
       ),
     );
   }
 }
-

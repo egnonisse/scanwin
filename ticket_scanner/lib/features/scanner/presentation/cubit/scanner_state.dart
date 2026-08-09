@@ -1,4 +1,4 @@
-import '../../domain/entities/ticket_extraction.dart';
+import '../../domain/entities/receipt_extraction.dart';
 
 class ScannerState {
   const ScannerState({
@@ -8,7 +8,7 @@ class ScannerState {
   });
 
   final bool isLoading;
-  final TicketExtraction? extraction;
+  final ReceiptExtraction? extraction;
   final String? errorMessage;
 
   const ScannerState.initial()
@@ -18,7 +18,7 @@ class ScannerState {
 
   ScannerState copyWith({
     bool? isLoading,
-    TicketExtraction? extraction,
+    ReceiptExtraction? extraction,
     String? errorMessage,
   }) {
     return ScannerState(
@@ -28,4 +28,3 @@ class ScannerState {
     );
   }
 }
-

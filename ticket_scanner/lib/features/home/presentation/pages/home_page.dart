@@ -26,7 +26,7 @@ class HomePage extends StatelessWidget {
       create: (_) => HomeCubit(repository: repository)..start(),
       child: Scaffold(
         appBar: AppBar(
-          title: const Text('ScanWin'),
+          title: const Text('Pharmascan'),
           actions: [
             IconButton(
               onPressed: () => context.push('/scanner'),
@@ -128,7 +128,9 @@ class _PointsEventTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final subtitleParts = <String>[];
-    if (event.ticketId != null) subtitleParts.add('Ticket: ${event.ticketId}');
+    if (event.receiptId != null) {
+      subtitleParts.add('Reçu: ${event.receiptId!.substring(0, 8)}…');
+    }
     if (event.amount != null) {
       subtitleParts.add(
         'Montant: ${MoneyFormatter.formatAmount(event.amount!, currencyCode)}',

@@ -3,7 +3,10 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/money/money_formatter.dart';
-import '../../domain/entities/ticket_extraction.dart';
+import '../../data/repositories/firebase_receipt_repository.dart';
+import '../../domain/entities/receipt_extraction.dart';
+import '../cubit/confirmation_cubit.dart';
+import '../cubit/confirmation_state.dart';
 import '../../../settings/presentation/cubit/settings_cubit.dart';
 import '../../../settings/presentation/cubit/settings_state.dart';
 
@@ -15,126 +18,319 @@ class ConfirmationPage extends StatefulWidget {
 }
 
 class _ConfirmationPageState extends State<ConfirmationPage> {
-  final TextEditingController _ticketIdController = TextEditingController();
+  final TextEditingController _pharmacyController = TextEditingController();
   final TextEditingController _montantController = TextEditingController();
   final TextEditingController _dateController = TextEditingController();
-  final TextEditingController _enseigneController = TextEditingController();
 
-  TicketExtraction? _initialExtraction;
+  /// Lignes de médicaments éditables (draft local).
+  List<ReceiptItem> _items = [];
+
+  bool _initialized = false;
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
 
     final extra = GoRouterState.of(context).extra;
-    final extraction = extra is TicketExtraction ? extra : null;
+    final extraction = extra is ReceiptExtraction ? extra : null;
+    if (extraction == null || _initialized) return;
 
-    if (extraction == null) return;
-    if (_initialExtraction == null) {
-      _initialExtraction = extraction;
-      _ticketIdController.text = extraction.ticketId ?? '';
-      _montantController.text = extraction.montantTotal?.toStringAsFixed(2) ?? '';
-      _dateController.text = extraction.dateTicket ?? '';
-      _enseigneController.text = extraction.enseigne ?? '';
-    }
+    _initialized = true;
+    _pharmacyController.text = extraction.pharmacyName ?? '';
+    _montantController.text = extraction.montantTotal?.toStringAsFixed(2) ?? '';
+    _dateController.text = extraction.dateTicket ?? '';
+    _items = List<ReceiptItem>.from(extraction.items);
   }
 
   @override
   void dispose() {
-    _ticketIdController.dispose();
+    _pharmacyController.dispose();
     _montantController.dispose();
     _dateController.dispose();
-    _enseigneController.dispose();
     super.dispose();
   }
 
-  double? _parseAmount(String input) {
-    final normalized = input.trim().replaceAll(',', '.');
-    return double.tryParse(normalized);
+  void _updateItem(int index, String name, double price) {
+    setState(() {
+      _items[index] = ReceiptItem(name: name, price: price);
+    });
+  }
+
+  void _addItem() {
+    setState(() {
+      _items.add(const ReceiptItem(name: '', price: 0));
+    });
+  }
+
+  void _removeItem(int index) {
+    setState(() {
+      _items.removeAt(index);
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     final extra = GoRouterState.of(context).extra;
-    final extraction = extra is TicketExtraction ? extra : null;
+    final extraction = extra is ReceiptExtraction ? extra : null;
 
     return Scaffold(
       appBar: AppBar(title: const Text('Confirmation')),
-      body: BlocBuilder<SettingsCubit, SettingsState>(
-        builder: (context, settings) {
-          if (extraction == null || _initialExtraction == null) {
-            return const Center(child: Text('Aucune donnée OCR.'));
-          }
-
-          final amount = _parseAmount(_montantController.text);
-          final formattedAmount = amount == null
-              ? null
-              : MoneyFormatter.formatAmount(amount, settings.currencyCode);
-
-          return Padding(
-            padding: const EdgeInsets.all(16),
-            child: ListView(
-              children: [
-                Text(
-                  'Devise : ${settings.currencyCode}',
-                  style: Theme.of(context).textTheme.titleMedium,
-                ),
-                const SizedBox(height: 12),
-                if (formattedAmount != null) Text(formattedAmount),
-                const SizedBox(height: 24),
-                TextField(
-                  controller: _ticketIdController,
-                  decoration: const InputDecoration(
-                    labelText: 'ID ticket (numéro de ticket / code-barres)',
-                    border: OutlineInputBorder(),
-                  ),
-                ),
-                const SizedBox(height: 12),
-                TextField(
-                  controller: _montantController,
-                  decoration: const InputDecoration(
-                    labelText: 'Montant total',
-                    border: OutlineInputBorder(),
-                  ),
-                  keyboardType:
-                      const TextInputType.numberWithOptions(decimal: true),
-                ),
-                const SizedBox(height: 12),
-                TextField(
-                  controller: _dateController,
-                  decoration: const InputDecoration(
-                    labelText: 'Date du ticket (ex: 31/03/2025)',
-                    border: OutlineInputBorder(),
-                  ),
-                ),
-                const SizedBox(height: 12),
-                TextField(
-                  controller: _enseigneController,
-                  decoration: const InputDecoration(
-                    labelText: 'Enseigne / Commerçant',
-                    border: OutlineInputBorder(),
-                  ),
-                ),
-                const SizedBox(height: 24),
-                FilledButton.icon(
-                  onPressed: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text(
-                          'MVP: validation non branchée (Cloud Function plus tard).',
-                        ),
-                      ),
-                    );
-                  },
-                  icon: const Icon(Icons.check),
-                  label: const Text('Valider le ticket'),
-                ),
-              ],
-            ),
-          );
-        },
+      body: BlocProvider(
+        create: (_) =>
+            ConfirmationCubit(repository: const FirebaseReceiptRepository()),
+        child: BlocBuilder<SettingsCubit, SettingsState>(
+          builder: (context, settings) {
+            if (extraction == null || !_initialized) {
+              return const Center(child: Text('Aucune donnée OCR.'));
+            }
+            return _ConfirmationForm(
+              settings: settings,
+              pharmacyController: _pharmacyController,
+              montantController: _montantController,
+              dateController: _dateController,
+              items: _items,
+              onUpdateItem: _updateItem,
+              onAddItem: _addItem,
+              onRemoveItem: _removeItem,
+            );
+          },
+        ),
       ),
     );
   }
 }
 
+class _ConfirmationForm extends StatelessWidget {
+  const _ConfirmationForm({
+    required this.settings,
+    required this.pharmacyController,
+    required this.montantController,
+    required this.dateController,
+    required this.items,
+    required this.onUpdateItem,
+    required this.onAddItem,
+    required this.onRemoveItem,
+  });
+
+  final SettingsState settings;
+  final TextEditingController pharmacyController;
+  final TextEditingController montantController;
+  final TextEditingController dateController;
+  final List<ReceiptItem> items;
+  final void Function(int, String, double) onUpdateItem;
+  final VoidCallback onAddItem;
+  final void Function(int) onRemoveItem;
+
+  void _onSuccess(BuildContext context, ConfirmationState state) {
+    context.read<ConfirmationCubit>().reset();
+    context.go('/home');
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('+${state.pointsAdded} points crédités !')),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final montant = double.tryParse(montantController.text.replaceAll(',', '.'));
+    final formattedAmount = montant == null
+        ? null
+        : MoneyFormatter.formatAmount(montant, settings.currencyCode);
+
+    return Padding(
+      padding: const EdgeInsets.all(16),
+      child: ListView(
+        children: [
+          Text(
+            'Devise : ${settings.currencyCode}',
+            style: Theme.of(context).textTheme.titleMedium,
+          ),
+          const SizedBox(height: 12),
+          if (formattedAmount != null) Text(formattedAmount),
+          const SizedBox(height: 24),
+          TextField(
+            controller: pharmacyController,
+            decoration: const InputDecoration(
+              labelText: 'Pharmacie',
+              border: OutlineInputBorder(),
+            ),
+          ),
+          const SizedBox(height: 12),
+          TextField(
+            controller: dateController,
+            decoration: const InputDecoration(
+              labelText: 'Date du reçu (ex: 31/03/2025)',
+              border: OutlineInputBorder(),
+            ),
+          ),
+          const SizedBox(height: 12),
+          TextField(
+            controller: montantController,
+            decoration: const InputDecoration(
+              labelText: 'Montant total',
+              border: OutlineInputBorder(),
+            ),
+            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+          ),
+          const SizedBox(height: 24),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Médicaments (${items.length})',
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
+              TextButton.icon(
+                onPressed: onAddItem,
+                icon: const Icon(Icons.add),
+                label: const Text('Ajouter'),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          if (items.isEmpty)
+            const Text('Aucune ligne. Ajoute au moins un médicament.')
+          else
+            ...List.generate(
+              items.length,
+              (index) => _ItemEditor(
+                key: ValueKey(index),
+                initialName: items[index].name,
+                initialPrice: items[index].price,
+                onChanged: (name, price) => onUpdateItem(index, name, price),
+                onRemove: () => onRemoveItem(index),
+              ),
+            ),
+          const SizedBox(height: 24),
+          BlocConsumer<ConfirmationCubit, ConfirmationState>(
+            listener: (context, state) {
+              if (state.status == ConfirmationStatus.success) {
+                _onSuccess(context, state);
+              }
+            },
+            builder: (context, state) {
+              if (state.status == ConfirmationStatus.submitting) {
+                return const Center(child: CircularProgressIndicator());
+              }
+
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  FilledButton.icon(
+                    onPressed: () {
+                      context.read<ConfirmationCubit>().submit(
+                            pharmacyName: pharmacyController.text,
+                            dateText: dateController.text,
+                            montantText: montantController.text,
+                            items: items,
+                          );
+                    },
+                    icon: const Icon(Icons.check),
+                    label: const Text('Valider le reçu'),
+                  ),
+                  if (state.errorMessage != null) ...[
+                    const SizedBox(height: 12),
+                    Text(
+                      state.errorMessage!,
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.error,
+                      ),
+                    ),
+                  ],
+                ],
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Éditeur d'une ligne de médicament (nom + prix), autonome en saisie.
+class _ItemEditor extends StatefulWidget {
+  const _ItemEditor({
+    super.key,
+    required this.initialName,
+    required this.initialPrice,
+    required this.onChanged,
+    required this.onRemove,
+  });
+
+  final String initialName;
+  final double initialPrice;
+  final void Function(String name, double price) onChanged;
+  final VoidCallback onRemove;
+
+  @override
+  State<_ItemEditor> createState() => _ItemEditorState();
+}
+
+class _ItemEditorState extends State<_ItemEditor> {
+  late final TextEditingController _nameController;
+  late final TextEditingController _priceController;
+
+  @override
+  void initState() {
+    super.initState();
+    _nameController = TextEditingController(text: widget.initialName);
+    _priceController = TextEditingController(
+      text: widget.initialPrice > 0 ? widget.initialPrice.toStringAsFixed(2) : '',
+    );
+  }
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _priceController.dispose();
+    super.dispose();
+  }
+
+  void _notify() {
+    final price = double.tryParse(_priceController.text.replaceAll(',', '.'));
+    widget.onChanged(_nameController.text.trim(), price ?? 0);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Row(
+        children: [
+          Expanded(
+            flex: 3,
+            child: TextField(
+              controller: _nameController,
+              onChanged: (_) => _notify(),
+              decoration: const InputDecoration(
+                labelText: 'Médicament',
+                border: OutlineInputBorder(),
+                isDense: true,
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            flex: 2,
+            child: TextField(
+              controller: _priceController,
+              onChanged: (_) => _notify(),
+              keyboardType:
+                  const TextInputType.numberWithOptions(decimal: true),
+              decoration: const InputDecoration(
+                labelText: 'Prix',
+                border: OutlineInputBorder(),
+                isDense: true,
+              ),
+            ),
+          ),
+          IconButton(
+            onPressed: widget.onRemove,
+            icon: const Icon(Icons.delete_outline),
+            tooltip: 'Supprimer',
+          ),
+        ],
+      ),
+    );
+  }
+}
