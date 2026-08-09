@@ -1,0 +1,37 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Preuves d'unicité : écrites uniquement par la Cloud Function
+    // (admin SDK, bypass des règles). Lecture interdite au client.
+    match /scannedTickets/{ticketId} {
+      allow read, write: if false;
+    }
+
+    // Profil utilisateur : le client ne peut créer que son propre profil
+    // avec points == 0, et ne peut modifier QUE currencyCode.
+    // points / createdAt / pointsEvents sont gérés par la Cloud Function.
+    match /users/{userId} {
+      allow read: if request.auth != null && request.auth.uid == userId;
+
+      allow create: if request.auth != null
+          && request.auth.uid == userId
+          && request.resource.data.keys().hasOnly(['points', 'currencyCode', 'createdAt'])
+          && request.resource.data.points == 0
+          && request.resource.data.currencyCode is string;
+
+      allow update: if request.auth != null
+          && request.auth.uid == userId
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['currencyCode']);
+
+      allow delete: if false;
+    }
+
+    // Historique des points : lecture par le propriétaire uniquement,
+    // écriture par la Cloud Function uniquement.
+    match /users/{userId}/pointsEvents/{eventId} {
+      allow read: if request.auth != null && request.auth.uid == userId;
+      allow write: if false;
+    }
+  }
+}

@@ -1,0 +1,10 @@
+# Node
+node_modules/
+
+# Firebase
+.firebase/
+firebase-debug.log
+
+# Flutter (racine)
+build/
+.dart_tool/
