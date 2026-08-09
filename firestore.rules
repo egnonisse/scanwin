@@ -2,24 +2,34 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Archives des reçus : écrites uniquement par la Cloud Function
-    // (admin SDK, bypass des règles). Lecture interdite au client.
+    // Administrateurs : identifiés par leur email Firebase Auth.
+    function isAdmin() {
+      return request.auth != null
+          && request.auth.token.email in ['egnonisse@gmail.com'];
+    }
+
+    // Archives des reçus : écrites par la Cloud Function (admin SDK).
+    // Lecture et suppression réservées à l'admin (modération).
     match /receipts/{receiptId} {
-      allow read, write: if false;
+      allow read: if isAdmin();
+      allow create, update: if false;
+      allow delete: if isAdmin();
     }
 
     // Table de recherche des prix : lue par les utilisateurs authentifiés
-    // pour la recherche médicament, écrite par la Cloud Function uniquement.
+    // (recherche médicament), écrite par la Cloud Function,
+    // supprimée par l'admin (modération en cascade).
     match /priceEntries/{entryId} {
       allow read: if request.auth != null;
-      allow write: if false;
+      allow create, update: if false;
+      allow delete: if isAdmin();
     }
 
-    // Pharmacies : liste publique lisible par les utilisateurs connectés,
-    // gérées par l'admin (via SDK admin / règles administrateur).
+    // Pharmacies : lues par les utilisateurs connectés (app),
+    // gérées par l'admin (CRUD + dates de garde).
     match /pharmacies/{pharmacyId} {
       allow read: if request.auth != null;
-      allow write: if false;
+      allow create, update, delete: if isAdmin();
     }
 
     // Profil utilisateur : le client ne peut créer que son propre profil
