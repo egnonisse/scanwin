@@ -29,6 +29,11 @@ class HomePage extends StatelessWidget {
           title: const Text('Pharmascan'),
           actions: [
             IconButton(
+              onPressed: () => context.push('/search'),
+              icon: const Icon(Icons.search),
+              tooltip: 'Rechercher un médicament',
+            ),
+            IconButton(
               onPressed: () => context.push('/scanner'),
               icon: const Icon(Icons.qr_code_scanner),
               tooltip: 'Scanner un ticket',
