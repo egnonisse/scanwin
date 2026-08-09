@@ -177,6 +177,8 @@ exports.submitReceipt = functions.https.onCall(async (data, context) => {
         transaction.set(db.collection('priceEntries').doc(), {
           medicationName: item.name,
           pharmacyId,
+          // Dénormalisé pour l'affichage direct dans la recherche (pas de N+1).
+          pharmacyName,
           price: item.price,
           quantity: item.quantity,
           scannedAt: admin.firestore.FieldValue.serverTimestamp(),

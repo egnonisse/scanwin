@@ -1,0 +1,13 @@
+{
+  "indexes": [
+    {
+      "collectionGroup": "priceEntries",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "medicationName", "order": "ASCENDING" },
+        { "fieldPath": "price", "order": "ASCENDING" }
+      ]
+    }
+  ],
+  "fieldOverrides": []
+}
