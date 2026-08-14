@@ -1,0 +1,24 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    // Administrateurs : identifiés par leur email Firebase Auth.
+    function isAdmin() {
+      return request.auth != null
+          && request.auth.token.email in ['egnonisse@gmail.com'];
+    }
+
+    // Photos en attente (uploadées par l'app avant soumission) :
+    // seul le propriétaire écrit/supprime, l'admin peut lire.
+    match /pending/{uid}/{fileName} {
+      allow read: if isAdmin();
+      allow write: if request.auth != null && request.auth.uid == uid;
+    }
+
+    // Photos finales des reçus (déplacées par la Cloud Function) :
+    // lecture admin uniquement (privacy), écriture CF (admin SDK).
+    match /receipts/{fileName} {
+      allow read: if isAdmin();
+      allow write: if false;
+    }
+  }
+}

@@ -139,6 +139,24 @@ exports.submitReceipt = functions.https.onCall(async (data, context) => {
 
   const receiptId = hashReceipt({ pharmacyId, dateTicket, montant, items });
 
+  // Déplace la photo du reçu (uploadée en pending/ par le client) vers
+  // receipts/{hash}.jpg — hors transaction (opération Storage).
+  let photoPath = null;
+  const storageBucket = admin.storage().bucket();
+  const pendingPhoto = data && typeof data.photoPath === 'string'
+    ? data.photoPath
+    : null;
+  if (pendingPhoto && pendingPhoto.startsWith('pending/')) {
+    const srcFile = storageBucket.file(pendingPhoto);
+    const [srcExists] = await srcFile.exists();
+    if (srcExists) {
+      const destPath = `receipts/${receiptId}.jpg`;
+      await srcFile.copy(destPath);
+      await srcFile.delete();
+      photoPath = destPath;
+    }
+  }
+
   const db = admin.firestore();
   const receiptRef = db.collection('receipts').doc(receiptId);
 
@@ -170,6 +188,10 @@ exports.submitReceipt = functions.https.onCall(async (data, context) => {
         montant,
         itemCount: items.length,
         items,
+        // Un reçu soumis par l'app est validé d'office (corrigeable ensuite
+        // par l'admin : la correction régénère les priceEntries).
+        status: 'validated',
+        ...(photoPath !== null ? { photoPath } : {}),
       });
 
       // Table de recherche prix (1 document par ligne de médicament).
@@ -201,7 +223,16 @@ exports.submitReceipt = functions.https.onCall(async (data, context) => {
       return { success: true, pointsAdded: POINTS_PER_RECEIPT, receiptId };
     });
   } catch (error) {
-    if (error instanceof functions.https.HttpsError) throw error;
+    if (error instanceof functions.https.HttpsError) {
+      // La photo a été copiée avant la transaction : la nettoyer si la
+      // soumission a échoué (ex: reçu déjà soumis).
+      if (photoPath !== null) {
+        try {
+          await storageBucket.file(photoPath).delete();
+        } catch (_) { /* best effort */ }
+      }
+      throw error;
+    }
     functions.logger.error('submitReceipt failed', { userId }, error);
     throw new functions.https.HttpsError(
       'internal',

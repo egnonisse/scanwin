@@ -8,6 +8,8 @@ class ReceiptDoc {
     required this.scannedAt,
     required this.itemCount,
     required this.items,
+    this.status = 'validated',
+    this.photoPath,
   });
 
   final String id;
@@ -17,6 +19,15 @@ class ReceiptDoc {
   final DateTime? scannedAt;
   final int itemCount;
   final List<ReceiptItemDoc> items;
+
+  /// 'validated' (défaut, soumis par l'app) ou 'pending' (en attente de
+  /// re-correction par l'admin).
+  final String status;
+
+  /// Chemin Storage de la photo du reçu (ex: "receipts/{hash}.jpg").
+  final String? photoPath;
+
+  bool get isValidated => status == 'validated';
 }
 
 class ReceiptItemDoc {
