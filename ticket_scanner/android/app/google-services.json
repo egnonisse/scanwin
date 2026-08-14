@@ -9,7 +9,7 @@
       "client_info": {
         "mobilesdk_app_id": "1:44901635530:android:8456fd3a51fdb5a549eb33",
         "android_client_info": {
-          "package_name": "com.example.ticket_scanner"
+          "package_name": "com.softhubapp.scanapp"
         }
       },
       "oauth_client": [],
