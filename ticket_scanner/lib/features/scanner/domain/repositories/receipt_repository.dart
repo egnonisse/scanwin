@@ -7,7 +7,13 @@ class ReceiptAlreadySubmittedException implements Exception {
 
 /// Erreur générique de soumission (réseau, serveur, validation).
 class ReceiptSubmissionException implements Exception {
-  const ReceiptSubmissionException();
+  const ReceiptSubmissionException({this.detail});
+
+  /// Message détaillé du serveur (si disponible).
+  final String? detail;
+
+  @override
+  String toString() => detail ?? 'Erreur de soumission du reçu.';
 }
 
 abstract class ReceiptRepository {
@@ -21,5 +27,6 @@ abstract class ReceiptRepository {
     required String dateTicket,
     required double montant,
     required List<ReceiptItem> items,
+    String? imagePath,
   });
 }

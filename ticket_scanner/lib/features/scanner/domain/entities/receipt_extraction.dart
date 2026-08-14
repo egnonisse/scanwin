@@ -17,6 +17,7 @@ class ReceiptExtraction {
     required this.rawText,
     this.pharmacyName,
     this.dateTicket,
+    this.heureTicket,
     this.montantTotal,
     this.items = const [],
   });
@@ -30,7 +31,10 @@ class ReceiptExtraction {
   /// Date du reçu (format libre, ex: DD/MM/YYYY).
   final String? dateTicket;
 
-  /// Montant total (si détecté).
+  /// Heure du reçu (HH:MM, si détectée).
+  final String? heureTicket;
+
+  /// Montant total (si détecté, sinon somme des items).
   final double? montantTotal;
 
   /// Lignes de médicaments extraites.

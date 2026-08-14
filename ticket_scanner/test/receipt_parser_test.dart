@@ -5,6 +5,87 @@ void main() {
   const parser = ReceiptParser();
 
   group('ReceiptParser.parse', () {
+    test('extrait un reçu type LAOULO (somme des items + heure)', () {
+      const raw = 'PHARMACIE LAOULO\n'
+          'THERMOMETRE MED MERC 1500\n'
+          'Montant Versé 2000\n'
+          '26-07-2026 21:18';
+
+      final result = parser.parse(rawText: raw);
+
+      expect(result.pharmacyName, 'PHARMACIE LAOULO');
+      expect(result.items, hasLength(1));
+      expect(result.items[0].name, 'THERMOMETRE MED MERC');
+      expect(result.items[0].price, 1500);
+      // Pas de TOTAL explicite → somme des items (1500, PAS le versé 2000).
+      expect(result.montantTotal, 1500);
+      expect(result.dateTicket, '26-07-2026');
+      expect(result.heureTicket, '21:18');
+    });
+
+    test('ignore « Montant Versé » comme total', () {
+      const raw = 'PHARMACIE X\n'
+          'PARACETAMOL 500\n'
+          'Montant Versé 2000';
+
+      final result = parser.parse(rawText: raw);
+
+      expect(result.montantTotal, 500);
+      expect(result.items, hasLength(1));
+    });
+
+    test('parse le vrai format ML Kit du reçu LAOULO (colonnes)', () {
+      const raw = 'THERMOMETRE MED MERC1300\n'
+          '1 500\n'
+          'Net à payer: Especes 1 500 F CFA\n'
+          '-07-2026 21 15 39\n'
+          'PHARMACIE LAOULO';
+
+      final result = parser.parse(rawText: raw);
+
+      expect(result.pharmacyName, 'PHARMACIE LAOULO');
+      // Nom sans prix + prix sur la ligne suivante (reçus à colonnes).
+      expect(result.items, hasLength(1));
+      expect(result.items[0].name, 'THERMOMETRE MED MERC1300');
+      expect(result.items[0].price, 1500);
+      // "Net à payer" (avec à accentué) → 1500, pas le Versé.
+      expect(result.montantTotal, 1500);
+      // Heure "21 15" avec espaces → normalisée "21:15".
+      expect(result.heureTicket, '21:15');
+    });
+
+    test('rejette Règlement/F CFA et capte MERC1500 (reçu réel ML Kit)', () {
+      const raw = 'PHARMACIE LAOULO\n'
+          'Montant Versė\n'
+          'Règlement.\n'
+          '2 000\n'
+          'F CFA\n'
+          'Especes\n'
+          'Net à payer:\n'
+          '1500\n'
+          'F CFA\n'
+          'THERMOMETRE MED\n'
+          'MERC1500\n'
+          '1\n'
+          '500\n'
+          'QTE\n'
+          'ARTICLES\n'
+          'PU\n'
+          'MMONTANT\n'
+          'Ticket N° 1639547227\n'
+          '26-07-2026 21 15 39';
+
+      final result = parser.parse(rawText: raw);
+
+      expect(result.pharmacyName, 'PHARMACIE LAOULO');
+      // Un seul item : le thermomètre (MERC + 1500 collés).
+      expect(result.items, hasLength(1));
+      expect(result.items[0].name, 'MERC');
+      expect(result.items[0].price, 1500);
+      expect(result.montantTotal, 1500);
+      expect(result.heureTicket, '21:15');
+    });
+
     test('extrait un reçu ivoirien typique', () {
       const raw = 'PHARMACIE DU PLATEAU\n'
           '31/03/2025\n'

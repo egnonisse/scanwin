@@ -25,6 +25,9 @@ class _ConfirmationPageState extends State<ConfirmationPage> {
   /// Lignes de médicaments éditables (draft local).
   List<ReceiptItem> _items = [];
 
+  /// Chemin de la photo du reçu (envoyée au serveur pour archivage).
+  String? _imagePath;
+
   bool _initialized = false;
 
   @override
@@ -32,7 +35,15 @@ class _ConfirmationPageState extends State<ConfirmationPage> {
     super.didChangeDependencies();
 
     final extra = GoRouterState.of(context).extra;
-    final extraction = extra is ReceiptExtraction ? extra : null;
+    final extraction = switch (extra) {
+      (final ReceiptExtraction e, final String? _) => e,
+      final ReceiptExtraction e => e,
+      _ => null,
+    };
+    final imagePath = switch (extra) {
+      (final ReceiptExtraction _, final String? path) => path,
+      _ => null,
+    };
     if (extraction == null || _initialized) return;
 
     _initialized = true;
@@ -40,6 +51,7 @@ class _ConfirmationPageState extends State<ConfirmationPage> {
     _montantController.text = extraction.montantTotal?.toStringAsFixed(2) ?? '';
     _dateController.text = extraction.dateTicket ?? '';
     _items = List<ReceiptItem>.from(extraction.items);
+    _imagePath = imagePath;
   }
 
   @override
@@ -71,7 +83,11 @@ class _ConfirmationPageState extends State<ConfirmationPage> {
   @override
   Widget build(BuildContext context) {
     final extra = GoRouterState.of(context).extra;
-    final extraction = extra is ReceiptExtraction ? extra : null;
+    final extraction = switch (extra) {
+      (final ReceiptExtraction e, final String? _) => e,
+      final ReceiptExtraction e => e,
+      _ => null,
+    };
 
     return Scaffold(
       appBar: AppBar(title: const Text('Confirmation')),
@@ -89,6 +105,7 @@ class _ConfirmationPageState extends State<ConfirmationPage> {
               montantController: _montantController,
               dateController: _dateController,
               items: _items,
+              imagePath: _imagePath,
               onUpdateItem: _updateItem,
               onAddItem: _addItem,
               onRemoveItem: _removeItem,
@@ -107,6 +124,7 @@ class _ConfirmationForm extends StatelessWidget {
     required this.montantController,
     required this.dateController,
     required this.items,
+    required this.imagePath,
     required this.onUpdateItem,
     required this.onAddItem,
     required this.onRemoveItem,
@@ -117,6 +135,7 @@ class _ConfirmationForm extends StatelessWidget {
   final TextEditingController montantController;
   final TextEditingController dateController;
   final List<ReceiptItem> items;
+  final String? imagePath;
   final void Function(int, String, double) onUpdateItem;
   final VoidCallback onAddItem;
   final void Function(int) onRemoveItem;
@@ -222,6 +241,7 @@ class _ConfirmationForm extends StatelessWidget {
                             dateText: dateController.text,
                             montantText: montantController.text,
                             items: items,
+                            imagePath: imagePath,
                           );
                     },
                     icon: const Icon(Icons.check),

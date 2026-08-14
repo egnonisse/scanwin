@@ -26,6 +26,7 @@ class ConfirmationCubit extends Cubit<ConfirmationState> {
     required String dateText,
     required String montantText,
     required List<ReceiptItem> items,
+    String? imagePath,
   }) async {
     final name = pharmacyName.trim();
     if (name.length < 3) {
@@ -84,6 +85,7 @@ class ConfirmationCubit extends Cubit<ConfirmationState> {
         dateTicket: dateTicket,
         montant: montant,
         items: validItems,
+        imagePath: imagePath,
       );
       emit(
         state.copyWith(
@@ -96,6 +98,14 @@ class ConfirmationCubit extends Cubit<ConfirmationState> {
         state.copyWith(
           status: ConfirmationStatus.error,
           errorMessage: 'Ce reçu a déjà été soumis.',
+        ),
+      );
+    } on ReceiptSubmissionException catch (e) {
+      emit(
+        state.copyWith(
+          status: ConfirmationStatus.error,
+          errorMessage: e.detail ??
+              'Impossible de soumettre le reçu. Vérifie ta connexion et réessaie.',
         ),
       );
     } catch (_) {

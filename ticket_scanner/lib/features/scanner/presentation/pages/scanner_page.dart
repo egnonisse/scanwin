@@ -99,7 +99,10 @@ class ScannerPage extends StatelessWidget {
                           ? () {
                               // On envoie même si certains champs sont null :
                               // la page de confirmation laissera l'utilisateur éditer.
-                              context.push('/confirmation', extra: extraction);
+                              context.push(
+                                '/confirmation',
+                                extra: (extraction, state.imagePath),
+                              );
                             }
                           : null,
                       icon: const Icon(Icons.check),
@@ -137,6 +140,10 @@ class _ExtractionCard extends StatelessWidget {
             const SizedBox(height: 8),
             Text('Date : ${extraction.dateTicket ?? '—'}'),
             const SizedBox(height: 8),
+            if (extraction.heureTicket != null) ...[
+              Text('Heure : ${extraction.heureTicket}'),
+              const SizedBox(height: 8),
+            ],
             Text('Montant total : $montantText'),
             const SizedBox(height: 12),
             Text(
