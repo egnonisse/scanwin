@@ -14,9 +14,11 @@ class ReceiptParser {
     caseSensitive: false,
   );
 
-  /// Ligne de prix pur (ex: "1 500", "1500", "1 500 F CFA").
+  /// Ligne de prix pur (ex: "1 500", "1500", "2546 x 1", "1 500 F CFA").
+  /// Le suffixe quantité ("x 1", "X 2") est optionnel — présent sur les
+  /// reçus à colonnes (format réel ML Kit : "2546 x 1" sur une ligne).
   static final RegExp _priceLineRegExp = RegExp(
-    r'^(\d{1,3}(?:[ \u00A0]?\d{3})*(?:[.,]\d{1,2})?)\s*(?:FCFA|CFA|XOF|F|€)?\s*$',
+    r'^(\d{1,3}(?:[ \u00A0]?\d{3})*(?:[.,]\d{1,2})?)\s*(?:[xX×]\s*(\d{1,2}))?\s*(?:FCFA|CFA|XOF|F|€)?\s*$',
     caseSensitive: false,
   );
 
@@ -33,7 +35,13 @@ class ReceiptParser {
   );
 
   static final RegExp _totalRegExp = RegExp(
-    r'\b(?:TOTAL|NET\s*[ÀA]\s*PAYER|[ÀA]\s*PAYER)\b[^0-9]*(\d[\d \u00A0]*(?:[.,]\d{1,2})?)',
+    r'\b(?:TOTAL|NET\s*[ÀA]\s*PAYER|[ÀA]\s*PAYER|TTC)\b[^0-9]*(\d[\d \u00A0]*(?:[.,]\d{1,2})?)',
+    caseSensitive: false,
+  );
+
+  /// Secours : montant payé en espèces ("Cash: 2 846") si pas de TOTAL/TTC.
+  static final RegExp _cashRegExp = RegExp(
+    r'\bCASH\b[^0-9]*(\d[\d \u00A0]*(?:[.,]\d{1,2})?)',
     caseSensitive: false,
   );
 
@@ -65,7 +73,30 @@ class ReceiptParser {
   }
 
   ReceiptExtraction parse({required String rawText}) {
-    final lines = rawText
+    // ML Kit peut rendre des lettres latines étendues hors de [A-Za-zÀ-ÿ]
+    // (ex: "RINOGRİP" avec İ turc U+0130) qui cassent les regex de nom.
+    // On normalise ces caractères vers leur équivalent ASCII avant parsing.
+    final normalized = rawText
+        .replaceAll('İ', 'I')
+        .replaceAll('ı', 'i')
+        .replaceAll('ſ', 's')
+        .replaceAll('Ș', 'S')
+        .replaceAll('ș', 's')
+        .replaceAll('Ț', 'T')
+        .replaceAll('ț', 't')
+        .replaceAll('Ž', 'Z')
+        .replaceAll('ž', 'z')
+        .replaceAll('Č', 'C')
+        .replaceAll('č', 'c')
+        .replaceAll('Š', 'S')
+        .replaceAll('š', 's')
+        .replaceAll('Ă', 'A')
+        .replaceAll('ă', 'a')
+        .replaceAll('Â', 'A')
+        .replaceAll('Î', 'I')
+        .replaceAll('î', 'i');
+
+    final lines = normalized
         .split(RegExp(r'\r?\n'))
         .map((line) => line.trim())
         .where((line) => line.isNotEmpty)
@@ -109,13 +140,32 @@ class ReceiptParser {
 
   double? _findMontantTotal(String fullText) {
     final match = _totalRegExp.firstMatch(fullText);
-    if (match == null) return null;
-    return _toDouble(match.group(1));
+    if (match != null) return _toDouble(match.group(1));
+    // Secours : pas de TOTAL/TTC mais un montant en espèces.
+    final cash = _cashRegExp.firstMatch(fullText);
+    if (cash != null) return _toDouble(cash.group(1));
+    return null;
   }
 
   String? _findHeure(String fullText) {
+    // L'heure du ticket est généralement juste après la date
+    // ("15/08/2026 21:05") — on la cherche d'abord dans ce contexte.
+    final dateMatch = _dateRegExp.firstMatch(fullText);
+    if (dateMatch != null) {
+      final start = dateMatch.end;
+      final end = (start + 12).clamp(0, fullText.length);
+      final afterDate = fullText.substring(start, end);
+      final nearDate = _heureRegExp.firstMatch(afterDate);
+      if (nearDate != null) {
+        final hh = int.tryParse(nearDate.group(1)!);
+        final mm = int.tryParse(nearDate.group(2)!);
+        if (hh != null && mm != null && hh <= 23 && mm <= 59) {
+          return '${nearDate.group(1)}:${nearDate.group(2)}';
+        }
+      }
+    }
+    // Repli : première heure plausible du texte.
     for (final match in _heureRegExp.allMatches(fullText)) {
-      // Le regex exige déjà un non-chiffre avant l'heure (pas de "26 21").
       final hh = int.tryParse(match.group(1)!);
       final mm = int.tryParse(match.group(2)!);
       if (hh == null || mm == null || hh > 23 || mm > 59) continue;
@@ -169,8 +219,14 @@ class ReceiptParser {
         final price = _toDouble(nextPrice.group(1));
         if (price == null || !_isPlausiblePrice(price)) continue;
 
+        // Quantité éventuelle de la ligne prix ("2546 x 2" -> qty 2).
+        final lineQty = int.tryParse(nextPrice.group(2) ?? '');
         final (quantity, name) = _extractQuantity(rawName);
-        items.add(ReceiptItem(name: name, price: price, quantity: quantity));
+        items.add(ReceiptItem(
+          name: name,
+          price: price,
+          quantity: (lineQty != null && lineQty > 0) ? lineQty : quantity,
+        ));
         i++; // la ligne de prix est consommée
         continue;
       }

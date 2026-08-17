@@ -26,8 +26,9 @@ class ReceiptImagePreprocessor {
     img.adjustColor(
       image,
       contrast: contrast,
-      saturation: 1.0,
-      brightness: 0,
+      // NB : ne PAS passer `saturation` — bug du package image (4.9.x) :
+      // tout appel avec saturation (1.0, 1, 0…) produit une image noire.
+      // Testé 15/08/2026 : adjustColor(contrast: 1.4) seul → lisible.
     );
 
     return Uint8List.fromList(img.encodeJpg(image, quality: 92));

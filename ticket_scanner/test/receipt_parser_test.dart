@@ -106,6 +106,72 @@ void main() {
       expect(result.isValidForMvp, isTrue);
     });
 
+    test('reçu réel PHARMACIE DE LA MAIRIE (İ turc, TTC, heure après date)', () {
+      // OCR ML Kit réel (16/08/2026) : « RINOGRİP » contient un İ turc
+      // (U+0130) hors de [A-Za-zÀ-ÿ] — doit être normalisé en "I".
+      const raw = 'PHARMACIE DE LA MAIRIE\n'
+          'DR N\'GUESSAN EUPHRASIE ZON\n'
+          'TEL: 23 52 43 06\n'
+          '15/08/2026 21:05\n'
+          'RINOGRİP SACH B/10\n'
+          '2546\n'
+          '2546 X 1\n'
+          'LITACOLD CPR BT 20X4 UNITE\n'
+          '300\n'
+          '300 X 1\n'
+          'TTC:2 846\n'
+          'Cash: 2 846\n'
+          'Versé: 3 000\n'
+          'Rendu: 154\n'
+          'MERCI POUR LA CONFIANCE';
+
+      final result = parser.parse(rawText: raw);
+
+      expect(result.pharmacyName, 'PHARMACIE DE LA MAIRIE');
+      expect(result.dateTicket, '15/08/2026');
+      // L'heure près de la date (21:05) prime sur le téléphone (23:52).
+      expect(result.heureTicket, '21:05');
+      expect(result.montantTotal, 2846);
+      expect(result.items, hasLength(2));
+      expect(result.items[0].name, 'RINOGRIP SACH B/10');
+      expect(result.items[0].price, 2546);
+      expect(result.items[1].name, 'LITACOLD CPR BT 20X4 UNITE');
+      expect(result.items[1].price, 300);
+    });
+
+    test('format réel téléphone : prix + quantité sur la même ligne (2546 x 1)', () {
+      // OCR ML Kit réel du Redmi (16/08/2026) : la quantité est collée au prix
+      // sur la ligne suivante du nom — le parser doit la lire.
+      const raw = 'PHARMACIE DE LA MAIRIE\n'
+          'DR N\'GUESSAN EUPHRASIE ZON\n'
+          'TEL: 23 52 43 06\n'
+          'RINOGRiP SACH B/10\n'
+          '2546 x 1\n'
+          'LITACOLD CPR BT 20X4 UNITE\n'
+          '300 x 1\n'
+          '15/08/2026 21:05.\n'
+          'Cash:2 846\n'
+          'Versé:3 000\n'
+          'Rendu : 154\n'
+          'TTC:2 846\n'
+          'MERCI POUR LA CONFIANCE';
+
+      final result = parser.parse(rawText: raw);
+
+      expect(result.pharmacyName, 'PHARMACIE DE LA MAIRIE');
+      expect(result.heureTicket, '21:05');
+      expect(result.montantTotal, 2846);
+      expect(result.items, hasLength(2));
+      // Le nom est rendu tel que par l'OCR ("RINOGRiP" avec i minuscule) —
+      // l'utilisateur corrige dans le formulaire. L'important : 2 items lus.
+      expect(result.items[0].name, 'RINOGRiP SACH B/10');
+      expect(result.items[0].price, 2546);
+      expect(result.items[0].quantity, 1);
+      expect(result.items[1].name, 'LITACOLD CPR BT 20X4 UNITE');
+      expect(result.items[1].price, 300);
+      expect(result.items[1].quantity, 1);
+    });
+
     test('détecte la quantité (2X)', () {
       const raw = 'PHARMACIE X\n'
           '2X DOLIPRANE 500 1000\n'
