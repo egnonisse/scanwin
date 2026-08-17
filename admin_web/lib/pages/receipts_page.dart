@@ -90,14 +90,10 @@ class _ReceiptTile extends StatelessWidget {
         trailing: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            if (receipt.photoPath != null)
-              IconButton(
-                tooltip: 'Voir la photo du reçu',
-                icon: const Icon(Icons.photo_outlined),
-                onPressed: () => _viewPhoto(context),
-              ),
             IconButton(
-              tooltip: 'Modifier',
+              tooltip: receipt.photoPath != null
+                  ? 'Modifier (photo + items)'
+                  : 'Modifier',
               icon: const Icon(Icons.edit_outlined),
               onPressed: () => _openEditDialog(context),
             ),
@@ -114,37 +110,6 @@ class _ReceiptTile extends StatelessWidget {
             ),
           ],
         ),
-      ),
-    );
-  }
-
-  Future<void> _viewPhoto(BuildContext context) async {
-    final path = receipt.photoPath;
-    if (path == null) return;
-    await showDialog<void>(
-      context: context,
-      builder: (_) => FutureBuilder<String>(
-        future: FirebaseStorage.instance.ref(path).getDownloadURL(),
-        builder: (context, snapshot) {
-          return AlertDialog(
-            title: const Text('Photo du reçu'),
-            content: SizedBox(
-              width: 420,
-              height: 520,
-              child: snapshot.hasData
-                  ? Image.network(snapshot.data!, fit: BoxFit.contain)
-                  : snapshot.hasError
-                      ? Text('Photo inaccessible : ${snapshot.error}')
-                      : const Center(child: CircularProgressIndicator()),
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(),
-                child: const Text('Fermer'),
-              ),
-            ],
-          );
-        },
       ),
     );
   }
@@ -228,6 +193,9 @@ class _EditReceiptDialogState extends State<_EditReceiptDialog> {
   late final TextEditingController _dateController;
   late final List<_ItemEditorRow> _rows;
 
+  /// URL de la photo (null si le reçu n'a pas de photo).
+  late final Future<String>? _photoUrlFuture;
+
   @override
   void initState() {
     super.initState();
@@ -242,6 +210,10 @@ class _EditReceiptDialogState extends State<_EditReceiptDialog> {
     _rows = widget.receipt.items
         .map((item) => _ItemEditorRow(item: item))
         .toList();
+    final photoPath = widget.receipt.photoPath;
+    _photoUrlFuture = photoPath == null
+        ? null
+        : FirebaseStorage.instance.ref(photoPath).getDownloadURL();
   }
 
   @override
@@ -254,78 +226,130 @@ class _EditReceiptDialogState extends State<_EditReceiptDialog> {
     super.dispose();
   }
 
+  Widget _buildForm() {
+    return SingleChildScrollView(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          TextField(
+            controller: _montantController,
+            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+            decoration: const InputDecoration(
+              labelText: 'Montant total (FCFA)',
+            ),
+          ),
+          const SizedBox(height: 8),
+          TextField(
+            controller: _dateController,
+            decoration: const InputDecoration(
+              labelText: 'Date du reçu (JJ/MM/AAAA) — laisser vide si inconnue',
+            ),
+          ),
+          const SizedBox(height: 16),
+          Text('Médicaments', style: Theme.of(context).textTheme.titleSmall),
+          const SizedBox(height: 8),
+          ..._rows.asMap().entries.map(
+            (entry) => Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: Row(
+                children: [
+                  Expanded(
+                    flex: 5,
+                    child: entry.value.nameField,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    flex: 2,
+                    child: entry.value.priceField,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    flex: 1,
+                    child: entry.value.quantityField,
+                  ),
+                  IconButton(
+                    tooltip: 'Retirer la ligne',
+                    icon: const Icon(Icons.remove_circle_outline),
+                    onPressed: () {
+                      setState(() {
+                        _rows.removeAt(entry.key);
+                      });
+                    },
+                  ),
+                ],
+              ),
+            ),
+          ),
+          TextButton.icon(
+            onPressed: () {
+              setState(() {
+                _rows.add(_ItemEditorRow.empty());
+              });
+            },
+            icon: const Icon(Icons.add),
+            label: const Text('Ajouter un médicament'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPhoto() {
+    return FutureBuilder<String>(
+      future: _photoUrlFuture,
+      builder: (context, snapshot) {
+        if (snapshot.hasData) {
+          return ClipRRect(
+            borderRadius: BorderRadius.circular(8),
+            child: Image.network(
+              snapshot.data!,
+              fit: BoxFit.contain,
+              width: 360,
+              height: 480,
+            ),
+          );
+        }
+        if (snapshot.hasError) {
+          return Container(
+            width: 360,
+            height: 480,
+            color: Theme.of(context).colorScheme.surfaceContainerHighest,
+            child: Center(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Text('Photo inaccessible : ${snapshot.error}'),
+              ),
+            ),
+          );
+        }
+        return Container(
+          width: 360,
+          height: 480,
+          color: Theme.of(context).colorScheme.surfaceContainerHighest,
+          child: const Center(child: CircularProgressIndicator()),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final hasPhoto = _photoUrlFuture != null;
     return AlertDialog(
       title: const Text('Modifier le reçu'),
       content: SizedBox(
-        width: 520,
-        child: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              TextField(
-                controller: _montantController,
-                keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                decoration: const InputDecoration(
-                  labelText: 'Montant total (FCFA)',
-                ),
-              ),
-              const SizedBox(height: 8),
-              TextField(
-                controller: _dateController,
-                decoration: const InputDecoration(
-                  labelText: 'Date du reçu (JJ/MM/AAAA) — laisser vide si inconnue',
-                ),
-              ),
-              const SizedBox(height: 16),
-              Text('Médicaments', style: Theme.of(context).textTheme.titleSmall),
-              const SizedBox(height: 8),
-              ..._rows.asMap().entries.map(
-                (entry) => Padding(
-                  padding: const EdgeInsets.only(bottom: 8),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        flex: 5,
-                        child: entry.value.nameField,
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        flex: 2,
-                        child: entry.value.priceField,
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        flex: 1,
-                        child: entry.value.quantityField,
-                      ),
-                      IconButton(
-                        tooltip: 'Retirer la ligne',
-                        icon: const Icon(Icons.remove_circle_outline),
-                        onPressed: () {
-                          setState(() {
-                            _rows.removeAt(entry.key);
-                          });
-                        },
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              TextButton.icon(
-                onPressed: () {
-                  setState(() {
-                    _rows.add(_ItemEditorRow.empty());
-                  });
-                },
-                icon: const Icon(Icons.add),
-                label: const Text('Ajouter un médicament'),
-              ),
-            ],
-          ),
-        ),
+        width: hasPhoto ? 880 : 520,
+        child: hasPhoto
+            ? Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildPhoto(),
+                  const SizedBox(width: 16),
+                  Expanded(child: _buildForm()),
+                ],
+              )
+            : _buildForm(),
       ),
       actions: [
         TextButton(
