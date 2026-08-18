@@ -65,6 +65,10 @@ class PharmaciesPage extends StatelessWidget {
         TextEditingController(text: pharmacy?.address ?? '');
     final communeController =
         TextEditingController(text: pharmacy?.commune ?? '');
+    final phone1Controller =
+        TextEditingController(text: pharmacy?.phone1 ?? '');
+    final phone2Controller =
+        TextEditingController(text: pharmacy?.phone2 ?? '');
 
     final saved = await showDialog<bool>(
       context: context,
@@ -103,6 +107,26 @@ class PharmaciesPage extends StatelessWidget {
                     border: OutlineInputBorder(),
                   ),
                 ),
+                const SizedBox(height: 12),
+                TextFormField(
+                  controller: phone1Controller,
+                  keyboardType: TextInputType.phone,
+                  decoration: const InputDecoration(
+                    labelText: 'Téléphone 1',
+                    hintText: 'Ex : 07 07 07 07 07',
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                TextFormField(
+                  controller: phone2Controller,
+                  keyboardType: TextInputType.phone,
+                  decoration: const InputDecoration(
+                    labelText: 'Téléphone 2',
+                    hintText: 'Ex : 27 27 27 27 27',
+                    border: OutlineInputBorder(),
+                  ),
+                ),
               ],
             ),
           ),
@@ -135,6 +159,12 @@ class PharmaciesPage extends StatelessWidget {
       commune: communeController.text.trim().isEmpty
           ? null
           : communeController.text.trim(),
+      phone1: phone1Controller.text.trim().isEmpty
+          ? null
+          : phone1Controller.text.trim(),
+      phone2: phone2Controller.text.trim().isEmpty
+          ? null
+          : phone2Controller.text.trim(),
       onDutyDates: pharmacy?.onDutyDates ?? const [],
     );
 
@@ -185,6 +215,8 @@ class _PharmacyTile extends StatelessWidget {
     final subtitleParts = <String>[
       if (pharmacy.commune != null) pharmacy.commune!,
       if (pharmacy.address != null) pharmacy.address!,
+      if (pharmacy.phone1 != null) '📞 ${pharmacy.phone1}',
+      if (pharmacy.phone2 != null) '📞 ${pharmacy.phone2}',
     ];
 
     return Card(

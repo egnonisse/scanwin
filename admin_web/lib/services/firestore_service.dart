@@ -202,6 +202,8 @@ class FirestoreService {
       name: data['name'] as String? ?? '',
       address: data['address'] as String?,
       commune: data['commune'] as String?,
+      phone1: data['phone1'] as String?,
+      phone2: data['phone2'] as String?,
       lat: (data['lat'] as num?)?.toDouble(),
       lng: (data['lng'] as num?)?.toDouble(),
       onDutyDates:
@@ -214,6 +216,8 @@ class FirestoreService {
       'name': pharmacy.name,
       'address': pharmacy.address,
       'commune': pharmacy.commune,
+      'phone1': pharmacy.phone1,
+      'phone2': pharmacy.phone2,
       'lat': pharmacy.lat,
       'lng': pharmacy.lng,
       'onDutyDates': pharmacy.onDutyDates,
