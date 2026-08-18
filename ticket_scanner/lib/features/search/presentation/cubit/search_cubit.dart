@@ -33,15 +33,21 @@ class SearchCubit extends Cubit<SearchState> {
     );
 
     _subscription = _repository.searchByMedication(trimmed).listen(
-      (results) => emit(
-        state.copyWith(isSearching: false, results: results),
-      ),
-      onError: (_) => emit(
-        state.copyWith(
-          isSearching: false,
-          errorMessage: 'Recherche impossible. Vérifie ta connexion.',
-        ),
-      ),
+      (results) {
+        if (isClosed) return;
+        emit(
+          state.copyWith(isSearching: false, results: results),
+        );
+      },
+      onError: (_) {
+        if (isClosed) return;
+        emit(
+          state.copyWith(
+            isSearching: false,
+            errorMessage: 'Recherche impossible. Vérifie ta connexion.',
+          ),
+        );
+      },
     );
   }
 
