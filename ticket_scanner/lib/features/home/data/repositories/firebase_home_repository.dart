@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
+import '../../domain/entities/contributor_profile.dart';
 import '../../domain/entities/points_event.dart';
 import '../../domain/repositories/home_repository.dart';
 import '../models/points_event_model.dart';
@@ -22,11 +23,14 @@ class FirebaseHomeRepository implements HomeRepository {
   }
 
   @override
-  Stream<int> watchPoints() {
+  Stream<ContributorProfile> watchProfile() {
     final ref = _firestore.collection('users').doc(_uid);
     return ref.snapshots().map((doc) {
       final data = doc.data() ?? <String, dynamic>{};
-      return (data['points'] as num?)?.toInt() ?? 0;
+      return ContributorProfile(
+        points: (data['points'] as num?)?.toInt() ?? 0,
+        contributions: (data['contributions'] as num?)?.toInt() ?? 0,
+      );
     });
   }
 
@@ -46,4 +50,3 @@ class FirebaseHomeRepository implements HomeRepository {
         );
   }
 }
-

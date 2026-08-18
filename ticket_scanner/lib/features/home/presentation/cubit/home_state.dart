@@ -1,36 +1,36 @@
+import '../../domain/entities/contributor_profile.dart';
 import '../../domain/entities/points_event.dart';
 
 class HomeState {
   const HomeState({
-    required this.points,
+    required this.profile,
     required this.events,
     required this.isLoading,
     required this.errorMessage,
   });
 
-  final int points;
+  final ContributorProfile profile;
   final List<PointsEvent> events;
   final bool isLoading;
   final String? errorMessage;
 
   const HomeState.initial()
-      : points = 0,
+      : profile = const ContributorProfile(points: 0, contributions: 0),
         events = const [],
         isLoading = true,
         errorMessage = null;
 
   HomeState copyWith({
-    int? points,
+    ContributorProfile? profile,
     List<PointsEvent>? events,
     bool? isLoading,
     String? errorMessage,
   }) {
     return HomeState(
-      points: points ?? this.points,
+      profile: profile ?? this.profile,
       events: events ?? this.events,
       isLoading: isLoading ?? this.isLoading,
       errorMessage: errorMessage,
     );
   }
 }
-

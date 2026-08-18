@@ -24,7 +24,8 @@ final _router = GoRouter(
         ),
         GoRoute(
           path: 'search',
-          builder: (context, state) => const SearchPage(),
+          builder: (context, state) =>
+              SearchPage(initialQuery: state.uri.queryParameters['q'] ?? ''),
         ),
         GoRoute(
           path: 'confirmation',
