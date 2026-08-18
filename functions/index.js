@@ -221,6 +221,9 @@ exports.submitReceipt = onCall(async (request) => {
       const userRef = db.collection('users').doc(userId);
       transaction.update(userRef, {
         points: FieldValue.increment(POINTS_PER_RECEIPT),
+        // Compteur de contribution (reçus validés) — alimente le statut
+        // contributeur (Bronze/Argent/Or) affiché dans la home.
+        contributions: FieldValue.increment(1),
       });
 
       transaction.set(userRef.collection('pointsEvents').doc(), {
