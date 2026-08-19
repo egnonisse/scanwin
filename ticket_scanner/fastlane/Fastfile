@@ -8,12 +8,13 @@ platform :android do
     # 1. Build de l'AAB signé (clé : android/key.properties + keystore)
     gradle(
       task: "bundleRelease",
+      project_dir: "android",
       print_command: true
     )
 
     # 2. Upload vers Play Console — track interne
     supply(
-      aab: "build/app/outputs/bundle/release/app-release.aab",
+      aab: "android/build/app/outputs/bundle/release/app-release.aab",
       track: "internal",
       skip_upload_apk: true,
       skip_upload_metadata: true,
@@ -26,10 +27,10 @@ platform :android do
 
   desc "Build AAB et upload vers le track production"
   lane :deploy_production do
-    gradle(task: "bundleRelease")
+    gradle(task: "bundleRelease", project_dir: "android")
 
     supply(
-      aab: "build/app/outputs/bundle/release/app-release.aab",
+      aab: "android/build/app/outputs/bundle/release/app-release.aab",
       track: "production",
       skip_upload_apk: true,
       skip_upload_metadata: true,
