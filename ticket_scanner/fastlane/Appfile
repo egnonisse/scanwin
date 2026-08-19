@@ -1,0 +1,4 @@
+# Fastlane Appfile — identifiants de l'app
+# La clé JSON du service account est fournie par GitHub Actions (secret)
+json_key_file("play-uploader-key.json")
+package_name("com.softhubapp.scanapp")

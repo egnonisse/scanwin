@@ -1,0 +1,42 @@
+# Fastlane Fastfile — Pharmascan (Scan Cashback)
+# Lanes : build + upload Play Store (track interne)
+default_platform(:android)
+
+platform :android do
+  desc "Build AAB et upload vers le track interne (tests fermés)"
+  lane :deploy_internal do
+    # 1. Build de l'AAB signé (clé : android/key.properties + keystore)
+    gradle(
+      task: "bundleRelease",
+      print_command: true
+    )
+
+    # 2. Upload vers Play Console — track interne
+    supply(
+      aab: "build/app/outputs/bundle/release/app-release.aab",
+      track: "internal",
+      skip_upload_apk: true,
+      skip_upload_metadata: true,
+      skip_upload_images: true,
+      skip_upload_screenshots: true,
+      skip_upload_changelogs: true,
+      release_status: "completed"
+    )
+  end
+
+  desc "Build AAB et upload vers le track production"
+  lane :deploy_production do
+    gradle(task: "bundleRelease")
+
+    supply(
+      aab: "build/app/outputs/bundle/release/app-release.aab",
+      track: "production",
+      skip_upload_apk: true,
+      skip_upload_metadata: true,
+      skip_upload_images: true,
+      skip_upload_screenshots: true,
+      skip_upload_changelogs: true,
+      release_status: "completed"
+    )
+  end
+end

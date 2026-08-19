@@ -45,5 +45,10 @@ app.*.map.json
 /android/app/release
 android/key.properties
 
+# Secrets déploiement (injectés par GitHub Actions)
+*.jks
+play-uploader-key.json
+fastlane/play-uploader-key.json
+
 # Hermes desktop (pièces jointes locales)
 .hermes/

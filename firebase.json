@@ -14,6 +14,10 @@
     "ignore": ["firebase.json", "**/.*", "**/node_modules/**"],
     "rewrites": [
       {
+        "source": "/suppression-compte",
+        "destination": "/suppression-compte.html"
+      },
+      {
         "source": "**",
         "destination": "/index.html"
       }

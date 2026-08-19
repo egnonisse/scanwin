@@ -8,3 +8,8 @@ firebase-debug.log
 # Flutter (racine)
 build/
 .dart_tool/
+
+# Secrets Play Console / keystore
+play/
+*.jks
+android/key.properties

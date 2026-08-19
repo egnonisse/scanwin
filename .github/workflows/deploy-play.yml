@@ -1,0 +1,73 @@
+name: Deploy to Play Store
+
+on:
+  workflow_dispatch:
+    inputs:
+      track:
+        description: 'Track cible (internal = tests internes, production)'
+        required: true
+        default: 'internal'
+        type: choice
+        options:
+          - internal
+          - production
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ticket_scanner
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.x'
+          channel: 'stable'
+
+      - name: Setup Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.2'
+          bundler-cache: true
+
+      - name: Install fastlane
+        run: gem install fastlane
+
+      # --- Secrets : clé service account, keystore, key.properties ---
+      - name: Decode service account key
+        run: |
+          echo "${{ secrets.PLAY_UPLOADER_KEY_JSON }}" | base64 --decode > play-uploader-key.json
+
+      - name: Decode upload keystore
+        run: |
+          mkdir -p android/app
+          echo "${{ secrets.ANDROID_UPLOAD_KEYSTORE }}" | base64 --decode > android/app/scanapp-upload-keystore.jks
+
+      - name: Write key.properties
+        run: |
+          mkdir -p android
+          echo "storePassword=${{ secrets.KEYSTORE_STORE_PASSWORD }}" > android/key.properties
+          echo "keyPassword=${{ secrets.KEYSTORE_KEY_PASSWORD }}" >> android/key.properties
+          echo "keyAlias=${{ secrets.KEYSTORE_KEY_ALIAS }}" >> android/key.properties
+          echo "storeFile=android/app/scanapp-upload-keystore.jks" >> android/key.properties
+
+      - name: Run tests
+        run: flutter test
+
+      - name: Build & Upload (${{ github.event.inputs.track || 'internal' }})
+        env:
+          FASTLANE_XCODEBUILD_SETTINGS_TIMEOUT: 120
+        run: |
+          if [ "${{ github.event.inputs.track }}" = "production" ] || [ "${{ github.ref_type }}" = "tag" ]; then
+            bundle exec fastlane android deploy_production
+          else
+            bundle exec fastlane android deploy_internal
+          fi
