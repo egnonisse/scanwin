@@ -1,43 +1,40 @@
 # Fastlane Fastfile — Pharmascan (Scan Cashback)
-# Lanes : build + upload Play Store (track interne)
+# Lanes : build + upload Play Store (track interne / production)
 default_platform(:android)
 
 platform :android do
-  desc "Build AAB et upload vers le track interne (tests fermés)"
+  desc "Build AAB et upload vers le track interne"
   lane :deploy_internal do
-    # 1. Build de l'AAB signé (clé : android/key.properties + keystore)
-    gradle(
-      task: "bundleRelease",
-      project_dir: "android",
-      print_command: true
-    )
+    # 1. Build de l'AAB signé via Flutter (clé : android/key.properties + keystore)
+    #    flutter place l'AAB dans build/app/outputs/bundle/release/
+    sh("flutter", "build", "appbundle", "--release")
 
     # 2. Upload vers Play Console — track interne
     supply(
-      aab: "android/build/app/outputs/bundle/release/app-release.aab",
+      aab: "build/app/outputs/bundle/release/app-release.aab",
       track: "internal",
       skip_upload_apk: true,
+      skip_upload_aab: false,
       skip_upload_metadata: true,
       skip_upload_images: true,
       skip_upload_screenshots: true,
-      skip_upload_changelogs: true,
-      release_status: "completed"
+      version_code: 2
     )
   end
 
   desc "Build AAB et upload vers le track production"
   lane :deploy_production do
-    gradle(task: "bundleRelease", project_dir: "android")
+    sh("flutter", "build", "appbundle", "--release")
 
     supply(
-      aab: "android/build/app/outputs/bundle/release/app-release.aab",
+      aab: "build/app/outputs/bundle/release/app-release.aab",
       track: "production",
       skip_upload_apk: true,
+      skip_upload_aab: false,
       skip_upload_metadata: true,
       skip_upload_images: true,
       skip_upload_screenshots: true,
-      skip_upload_changelogs: true,
-      release_status: "completed"
+      version_code: 2
     )
   end
 end
