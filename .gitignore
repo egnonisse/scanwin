@@ -13,3 +13,6 @@ build/
 play/
 *.jks
 android/key.properties
+
+# Résidus de session Hermes (temporaires)
+.hermes-tmp.*
