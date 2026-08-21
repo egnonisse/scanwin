@@ -67,14 +67,22 @@ class ScannerPage extends StatelessWidget {
 
               return ListView(
                 children: [
-                  ElevatedButton.icon(
+                  FilledButton.icon(
                     onPressed: state.isLoading
                         ? null
                         : () => _requestPermissionAndScan(context),
-                    icon: const Icon(Icons.camera_alt),
+                    icon: const Icon(Icons.photo_camera),
                     label: Text(
                       state.isLoading ? 'OCR en cours...' : 'Prendre une photo',
                     ),
+                  ),
+                  const SizedBox(height: 8),
+                  OutlinedButton.icon(
+                    onPressed: state.isLoading
+                        ? null
+                        : () => context.read<ScannerCubit>().scanFromGallery(),
+                    icon: const Icon(Icons.photo_library),
+                    label: const Text('Choisir depuis la galerie'),
                   ),
                   if (state.errorMessage != null) ...[
                     const SizedBox(height: 12),

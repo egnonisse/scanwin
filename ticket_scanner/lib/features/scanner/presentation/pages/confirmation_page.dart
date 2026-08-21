@@ -170,7 +170,6 @@ class _ConfirmationForm extends StatelessWidget {
             controller: pharmacyController,
             decoration: const InputDecoration(
               labelText: 'Pharmacie',
-              border: OutlineInputBorder(),
             ),
           ),
           const SizedBox(height: 12),
@@ -178,7 +177,6 @@ class _ConfirmationForm extends StatelessWidget {
             controller: dateController,
             decoration: const InputDecoration(
               labelText: 'Date du reçu (ex: 31/03/2025)',
-              border: OutlineInputBorder(),
             ),
           ),
           const SizedBox(height: 12),
@@ -186,7 +184,6 @@ class _ConfirmationForm extends StatelessWidget {
             controller: montantController,
             decoration: const InputDecoration(
               labelText: 'Montant total',
-              border: OutlineInputBorder(),
             ),
             keyboardType: const TextInputType.numberWithOptions(decimal: true),
           ),
@@ -324,7 +321,6 @@ class _ItemEditorState extends State<_ItemEditor> {
               onChanged: (_) => _notify(),
               decoration: const InputDecoration(
                 labelText: 'Médicament',
-                border: OutlineInputBorder(),
                 isDense: true,
               ),
             ),
@@ -339,7 +335,6 @@ class _ItemEditorState extends State<_ItemEditor> {
                   const TextInputType.numberWithOptions(decimal: true),
               decoration: const InputDecoration(
                 labelText: 'Prix',
-                border: OutlineInputBorder(),
                 isDense: true,
               ),
             ),

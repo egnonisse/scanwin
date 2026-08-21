@@ -26,7 +26,6 @@ class SettingsPage extends StatelessWidget {
               InputDecorator(
                 decoration: const InputDecoration(
                   labelText: 'Devise d’affichage',
-                  border: OutlineInputBorder(),
                 ),
                 child: DropdownButtonHideUnderline(
                   child: DropdownButton<String>(

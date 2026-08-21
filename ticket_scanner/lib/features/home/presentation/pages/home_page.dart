@@ -5,6 +5,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/money/money_formatter.dart';
+import '../../../../core/theme/app_theme.dart';
 import '../../data/repositories/firebase_home_repository.dart';
 import '../../domain/entities/contributor_profile.dart';
 import '../../domain/entities/points_event.dart';
@@ -29,7 +30,30 @@ class HomePage extends StatelessWidget {
       create: (_) => HomeCubit(repository: repository)..start(),
       child: Scaffold(
         appBar: AppBar(
-          title: const Text('Pharmascan'),
+          flexibleSpace: Container(
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [AppColors.appBarStart, AppColors.appBarEnd],
+              ),
+            ),
+          ),
+          title: const Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('PharmaScan'),
+              SizedBox(height: 1),
+              Text(
+                'Comparez. Payez juste.',
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w400,
+                  color: Colors.white70,
+                ),
+              ),
+            ],
+          ),
           actions: [
             IconButton(
               onPressed: () => context.push('/scanner'),
@@ -50,16 +74,14 @@ class HomePage extends StatelessWidget {
                 return ListView(
                   padding: const EdgeInsets.all(16),
                   children: [
-                    _SearchBar(onSubmitted: (query) {
-                      context.push('/search');
-                    }),
-                    const SizedBox(height: 16),
+                    _SearchBar(onTap: () => context.push('/search')),
+                    const SizedBox(height: 14),
                     _ContributorHeader(profile: home.profile),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 14),
                     const _OnDutySection(),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 14),
                     const _PopularMedsSection(),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 14),
                     Text(
                       'Historique',
                       style: Theme.of(context).textTheme.titleMedium,
@@ -68,7 +90,10 @@ class HomePage extends StatelessWidget {
                     if (home.isLoading && home.events.isEmpty)
                       const Center(child: CircularProgressIndicator())
                     else if (home.events.isEmpty)
-                      const Text('Aucun événement pour le moment.')
+                      Text(
+                        'Aucun événement pour le moment.',
+                        style: Theme.of(context).textTheme.bodyMedium,
+                      )
                     else
                       ...home.events.map(
                         (e) => _PointsEventTile(
@@ -87,35 +112,50 @@ class HomePage extends StatelessWidget {
   }
 }
 
-/// Barre de recherche principale : tap = ouvre la vue recherche (2 onglets).
+/// Barre de recherche : carte blanche dans le contenu (Option A validée).
 class _SearchBar extends StatelessWidget {
-  const _SearchBar({required this.onSubmitted});
+  const _SearchBar({required this.onTap});
 
-  final ValueChanged<String> onSubmitted;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
-      onTap: () => onSubmitted(''),
-      borderRadius: BorderRadius.circular(12),
-      child: InputDecorator(
-        decoration: InputDecoration(
-          hintText: 'Rechercher un médicament ou une pharmacie…',
-          prefixIcon: const Icon(Icons.search),
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: BorderSide(
-              color: Theme.of(context).colorScheme.outline,
-            ),
+    return Material(
+      color: AppColors.surface,
+      borderRadius: BorderRadius.circular(AppRadii.field),
+      elevation: 0,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(AppRadii.field),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(AppRadii.field),
+            boxShadow: AppShadows.searchBar,
+          ),
+          child: Row(
+            children: [
+              const Icon(Icons.search, color: AppColors.primary, size: 20),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  'Rechercher un médicament ou une pharmacie…',
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: AppColors.textMuted,
+                      ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
           ),
         ),
-        child: const SizedBox.shrink(),
       ),
     );
   }
 }
 
-/// Badge contributeur (points + reçus validés + niveau).
+/// Badge contributeur (points + reçus validés + niveau) — carte avec ombre douce.
 class _ContributorHeader extends StatelessWidget {
   const _ContributorHeader({required this.profile});
 
@@ -130,55 +170,95 @@ class _ContributorHeader extends StatelessWidget {
         : 'Encore ${next - profile.contributions} reçus '
             'pour passer ${tier.label} → ${_nextTierLabel(tier)}';
 
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Icon(
-                  _tierIcon(tier),
-                  color: _tierColor(tier),
-                  size: 32,
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    'Contributeur ${tier.label}',
-                    style: Theme.of(context).textTheme.titleMedium,
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(AppRadii.card),
+        boxShadow: AppShadows.card,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 52,
+                height: 52,
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [Color(0xFFF7E6C4), AppColors.gold],
                   ),
+                  borderRadius: BorderRadius.circular(AppRadii.icon),
+                  boxShadow: const [
+                    BoxShadow(
+                      color: Color(0x33D4AF37),
+                      blurRadius: 10,
+                      offset: Offset(0, 4),
+                    ),
+                  ],
                 ),
-                Text(
-                  '${profile.points} pts',
-                  style: Theme.of(context).textTheme.titleMedium,
+                child: Icon(
+                  _tierIcon(tier),
+                  color: const Color(0xFF6B4D0A),
+                  size: 28,
                 ),
-              ],
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Contributeur ${tier.label}',
+                      style: Theme.of(context).textTheme.titleMedium,
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      '${profile.contributions} reçu'
+                      '${profile.contributions > 1 ? 's' : ''} scanné'
+                      '${profile.contributions > 1 ? 's' : ''}',
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
+                  ],
+                ),
+              ),
+              Text(
+                '${profile.points} pts',
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      color: AppColors.primary,
+                    ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(99),
+            child: LinearProgressIndicator(
+              value: next == null
+                  ? 1
+                  : ((profile.contributions / next).clamp(0.0, 1.0)),
+              minHeight: 6,
+              backgroundColor: const Color(0xFFE8EFE9),
+              valueColor: const AlwaysStoppedAnimation<Color>(AppColors.secondary),
             ),
-            const SizedBox(height: 8),
-            Text(
-              '${profile.contributions} reçu'
-              '${profile.contributions > 1 ? 's' : ''} scanné'
-              '${profile.contributions > 1 ? 's' : ''} · $progressLabel',
-              style: Theme.of(context).textTheme.bodySmall,
-            ),
-          ],
-        ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            progressLabel,
+            style: Theme.of(context).textTheme.bodySmall,
+          ),
+        ],
       ),
     );
   }
 
   static IconData _tierIcon(ContributorTier tier) => switch (tier) {
-        ContributorTier.bronze => Icons.emoji_events,
-        ContributorTier.silver => Icons.workspace_premium,
-        ContributorTier.gold => Icons.military_tech,
-      };
-
-  static Color _tierColor(ContributorTier tier) => switch (tier) {
-        ContributorTier.bronze => const Color(0xFF9C6B30),
-        ContributorTier.silver => const Color(0xFF8E9AAF),
-        ContributorTier.gold => const Color(0xFFD4AF37),
+        ContributorTier.bronze => Icons.workspace_premium,
+        ContributorTier.silver => Icons.military_tech,
+        ContributorTier.gold => Icons.emoji_events,
       };
 
   static String _nextTierLabel(ContributorTier tier) => switch (tier) {
@@ -206,34 +286,66 @@ class _OnDutySection extends StatelessWidget {
             .toList()
           ..sort((a, b) => a.name.compareTo(b.name));
 
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Text('Pharmacies de garde',
-                    style: Theme.of(context).textTheme.titleMedium),
-                const Spacer(),
-                TextButton(
-                  onPressed: () => context.push('/search'),
-                  child: const Text('Voir tout'),
-                ),
-              ],
-            ),
-            if (onDuty.isEmpty)
-              const Text('Aucune pharmacie de garde aujourd\'hui.')
-            else
-              ...onDuty.take(3).map(
-                (p) => ListTile(
-                  dense: true,
-                  leading: const Icon(Icons.local_pharmacy),
-                  title: Text(p.name),
-                  subtitle: p.commune == null
-                      ? null
-                      : Text(p.commune!),
-                ),
+        return Container(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: AppColors.surface,
+            borderRadius: BorderRadius.circular(AppRadii.card),
+            boxShadow: AppShadows.card,
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Text(
+                    'Pharmacies de garde',
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
+                  const Spacer(),
+                  TextButton(
+                    onPressed: () => context.push('/search'),
+                    child: const Text('Voir tout'),
+                  ),
+                ],
               ),
-          ],
+              if (onDuty.isEmpty)
+                Text(
+                  'Aucune pharmacie de garde aujourd\'hui.',
+                  style: Theme.of(context).textTheme.bodyMedium,
+                )
+              else
+                ...onDuty.take(3).map(
+                      (p) => ListTile(
+                        dense: true,
+                        contentPadding: EdgeInsets.zero,
+                        leading: Container(
+                          width: 40,
+                          height: 40,
+                          decoration: BoxDecoration(
+                            color: AppColors.iconBg,
+                            borderRadius: BorderRadius.circular(AppRadii.icon),
+                          ),
+                          child: const Icon(
+                            Icons.local_pharmacy,
+                            color: AppColors.primary,
+                            size: 20,
+                          ),
+                        ),
+                        title: Text(
+                          p.name,
+                          style: Theme.of(context).textTheme.titleSmall,
+                        ),
+                        subtitle: p.commune == null
+                            ? null
+                            : Text(
+                                p.commune!,
+                                style: Theme.of(context).textTheme.bodySmall,
+                              ),
+                      ),
+                    ),
+            ],
+          ),
         );
       },
     );
@@ -273,8 +385,9 @@ class _PopularMedsSection extends StatelessWidget {
           children: [
             for (final med in _meds)
               ActionChip(
-                avatar: const Icon(Icons.medication, size: 18),
+                avatar: const Icon(Icons.medication, size: 18, color: AppColors.primary),
                 label: Text(med),
+                labelStyle: Theme.of(context).textTheme.labelMedium,
                 onPressed: () => context.push('/search?q=${Uri.encodeQueryComponent(med)}'),
               ),
           ],
@@ -305,11 +418,37 @@ class _PointsEventTile extends StatelessWidget {
       );
     }
 
-    return Card(
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(AppRadii.card),
+        boxShadow: AppShadows.card,
+      ),
       child: ListTile(
-        leading: const Icon(Icons.receipt_long),
-        title: Text('+${event.pointsAdded} points'),
-        subtitle: subtitleParts.isEmpty ? null : Text(subtitleParts.join(' • ')),
+        leading: Container(
+          width: 36,
+          height: 36,
+          decoration: BoxDecoration(
+            color: AppColors.iconBg,
+            borderRadius: BorderRadius.circular(AppRadii.icon),
+          ),
+          child: const Icon(
+            Icons.receipt_long,
+            color: AppColors.primary,
+            size: 18,
+          ),
+        ),
+        title: Text(
+          '+${event.pointsAdded} points',
+          style: Theme.of(context).textTheme.titleSmall,
+        ),
+        subtitle: subtitleParts.isEmpty
+            ? null
+            : Text(
+                subtitleParts.join(' • '),
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
       ),
     );
   }

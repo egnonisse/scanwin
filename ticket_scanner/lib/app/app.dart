@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../core/theme/app_theme.dart';
 import '../features/home/presentation/pages/home_page.dart';
 import '../features/scanner/presentation/pages/confirmation_page.dart';
 import '../features/scanner/presentation/pages/scanner_page.dart';
@@ -47,10 +48,7 @@ class TicketScannerApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp.router(
       title: 'Pharmascan',
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.indigo),
-        useMaterial3: true,
-      ),
+      theme: buildAppTheme(),
       routerConfig: _router,
     );
   }

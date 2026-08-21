@@ -21,6 +21,7 @@ void main() {
     );
 
     await tester.pump(const Duration(milliseconds: 50));
-    expect(find.text('Initialisation…'), findsOneWidget);
+    expect(find.text('PharmaScan'), findsOneWidget);
+    expect(find.text('Comparez. Payez juste.'), findsOneWidget);
   });
 }

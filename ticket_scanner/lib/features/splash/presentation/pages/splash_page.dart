@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../core/theme/app_theme.dart';
 import '../../../settings/presentation/cubit/settings_cubit.dart';
 import '../cubit/app_init_cubit.dart';
 import '../cubit/app_init_state.dart';
@@ -53,12 +54,36 @@ class SplashPage extends StatelessWidget {
                     return Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        const CircularProgressIndicator(),
+                        Container(
+                          width: 72,
+                          height: 72,
+                          decoration: BoxDecoration(
+                            gradient: const LinearGradient(
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                              colors: [AppColors.appBarStart, AppColors.appBarEnd],
+                            ),
+                            borderRadius: BorderRadius.circular(AppRadii.icon),
+                            boxShadow: AppShadows.card,
+                          ),
+                          child: const Icon(
+                            Icons.local_pharmacy,
+                            color: AppColors.onPrimary,
+                            size: 36,
+                          ),
+                        ),
                         const SizedBox(height: 16),
                         Text(
-                          'Initialisation…',
-                          style: Theme.of(context).textTheme.titleMedium,
+                          'PharmaScan',
+                          style: Theme.of(context).textTheme.headlineSmall,
                         ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'Comparez. Payez juste.',
+                          style: Theme.of(context).textTheme.bodySmall,
+                        ),
+                        const SizedBox(height: 24),
+                        const CircularProgressIndicator(),
                       ],
                     );
                   },

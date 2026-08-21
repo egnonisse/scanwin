@@ -40,6 +40,31 @@ class ScannerCubit extends Cubit<ScannerState> {
       return;
     }
 
+    await _processPhoto(photo);
+  }
+
+  Future<void> scanFromGallery() async {
+    emit(state.copyWith(isLoading: true, errorMessage: null, extraction: null));
+
+    final picker = ImagePicker();
+    final XFile? photo = await picker.pickImage(
+      source: ImageSource.gallery,
+      imageQuality: 85,
+    );
+
+    if (photo == null) {
+      emit(state.copyWith(isLoading: false, errorMessage: 'Scan annulé.'));
+      return;
+    }
+
+    await _processPhoto(photo);
+  }
+
+  Future<void> clear() async {
+    emit(const ScannerState.initial());
+  }
+
+  Future<void> _processPhoto(XFile photo) async {
     try {
       // Prétraitement : contraste renforcé (reçus thermiques pâles).
       final bytes = await photo.readAsBytes();
@@ -75,9 +100,5 @@ class ScannerCubit extends Cubit<ScannerState> {
         ),
       );
     }
-  }
-
-  Future<void> clear() async {
-    emit(const ScannerState.initial());
   }
 }

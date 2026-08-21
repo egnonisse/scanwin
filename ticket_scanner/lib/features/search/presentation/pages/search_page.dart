@@ -1,8 +1,10 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../../core/money/money_formatter.dart';
+import '../../../../core/theme/app_theme.dart';
 import '../../../pharmacy/domain/entities/pharmacy.dart';
 import '../../../pharmacy/presentation/pages/pharmacies_page.dart';
 import '../../../pharmacy/presentation/widgets/pharmacy_sheet.dart';
@@ -45,27 +47,20 @@ class _SearchPageState extends State<SearchPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Rechercher')),
+      appBar: AppBar(
+        title: const Text('Recherche'),
+        leading: IconButton(
+          icon: const Icon(Icons.close),
+          onPressed: () => context.pop(),
+        ),
+      ),
       body: Column(
         children: [
           Padding(
-            padding: const EdgeInsets.all(16),
-            child: SegmentedButton<int>(
-              segments: const [
-                ButtonSegment(
-                  value: 0,
-                  icon: Icon(Icons.medication),
-                  label: Text('Médicaments'),
-                ),
-                ButtonSegment(
-                  value: 1,
-                  icon: Icon(Icons.local_pharmacy),
-                  label: Text('Pharmacies'),
-                ),
-              ],
-              selected: {_tabIndex},
-              onSelectionChanged: (selection) =>
-                  setState(() => _tabIndex = selection.first),
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+            child: _TabBar(
+              index: _tabIndex,
+              onChanged: (i) => setState(() => _tabIndex = i),
             ),
           ),
           Expanded(
@@ -107,7 +102,6 @@ class _SearchPageState extends State<SearchPage> {
                 decoration: InputDecoration(
                   labelText: 'Nom du médicament',
                   hintText: 'Ex : paracétamol, amoxicilline…',
-                  border: const OutlineInputBorder(),
                   suffixIcon: IconButton(
                     icon: const Icon(Icons.search),
                     onPressed: () => searchContext
@@ -252,5 +246,92 @@ class _MedicationGroupedList extends StatelessWidget {
       onDutyDates: (data['onDutyDates'] as List?)?.cast<String>() ?? const [],
     );
     await showPharmacySheet(context, pharmacy: pharmacy);
+  }
+}
+
+/// Onglets Médicaments / Pharmacies au style design system (fond gris,
+/// onglet actif vert, arrondis 5px).
+class _TabBar extends StatelessWidget {
+  const _TabBar({required this.index, required this.onChanged});
+
+  final int index;
+  final ValueChanged<int> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(3),
+      decoration: BoxDecoration(
+        color: AppColors.chipBg,
+        borderRadius: BorderRadius.circular(AppRadii.card),
+      ),
+      child: Row(
+        children: [
+          _TabItem(
+            label: 'Médicaments',
+            icon: Icons.medication,
+            active: index == 0,
+            onTap: () => onChanged(0),
+          ),
+          _TabItem(
+            label: 'Pharmacies',
+            icon: Icons.local_pharmacy,
+            active: index == 1,
+            onTap: () => onChanged(1),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _TabItem extends StatelessWidget {
+  const _TabItem({
+    required this.label,
+    required this.icon,
+    required this.active,
+    required this.onTap,
+  });
+
+  final String label;
+  final IconData icon;
+  final bool active;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Expanded(
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(AppRadii.card - 1),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 150),
+          padding: const EdgeInsets.symmetric(vertical: 9),
+          decoration: BoxDecoration(
+            color: active ? AppColors.primary : Colors.transparent,
+            borderRadius: BorderRadius.circular(AppRadii.card - 1),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                icon,
+                size: 16,
+                color: active ? AppColors.onPrimary : AppColors.textSecondary,
+              ),
+              const SizedBox(width: 6),
+              Text(
+                label,
+                style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                      color: active
+                          ? AppColors.onPrimary
+                          : AppColors.textSecondary,
+                    ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }
