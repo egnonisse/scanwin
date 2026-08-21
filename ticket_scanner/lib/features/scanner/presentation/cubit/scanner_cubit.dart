@@ -6,6 +6,7 @@ import 'package:google_mlkit_text_recognition/google_mlkit_text_recognition.dart
 import 'package:image_picker/image_picker.dart';
 import 'package:permission_handler/permission_handler.dart';
 
+import '../../../../core/analytics/app_analytics.dart';
 import '../../data/services/receipt_image_preprocessor.dart';
 import '../../domain/services/receipt_parser.dart';
 import 'scanner_state.dart';
@@ -14,12 +15,15 @@ class ScannerCubit extends Cubit<ScannerState> {
   ScannerCubit({
     required ReceiptParser parser,
     ReceiptImagePreprocessor? preprocessor,
+    AppAnalytics? analytics,
   })  : _parser = parser,
         _preprocessor = preprocessor ?? const ReceiptImagePreprocessor(),
+        _analytics = analytics ?? AppAnalytics(),
         super(const ScannerState.initial());
 
   final ReceiptParser _parser;
   final ReceiptImagePreprocessor _preprocessor;
+  final AppAnalytics _analytics;
 
   Future<bool> requestCameraPermission() async {
     final status = await Permission.camera.request();
@@ -28,6 +32,7 @@ class ScannerCubit extends Cubit<ScannerState> {
 
   Future<void> scanFromCamera() async {
     emit(state.copyWith(isLoading: true, errorMessage: null, extraction: null));
+    await _analytics.logScanStarted(source: 'camera');
 
     final picker = ImagePicker();
     final XFile? photo = await picker.pickImage(
@@ -36,6 +41,7 @@ class ScannerCubit extends Cubit<ScannerState> {
     );
 
     if (photo == null) {
+      await _analytics.logScanFailed(reason: 'cancelled');
       emit(state.copyWith(isLoading: false, errorMessage: 'Scan annulé.'));
       return;
     }
@@ -45,6 +51,7 @@ class ScannerCubit extends Cubit<ScannerState> {
 
   Future<void> scanFromGallery() async {
     emit(state.copyWith(isLoading: true, errorMessage: null, extraction: null));
+    await _analytics.logScanStarted(source: 'gallery');
 
     final picker = ImagePicker();
     final XFile? photo = await picker.pickImage(
@@ -53,6 +60,7 @@ class ScannerCubit extends Cubit<ScannerState> {
     );
 
     if (photo == null) {
+      await _analytics.logScanFailed(reason: 'cancelled');
       emit(state.copyWith(isLoading: false, errorMessage: 'Scan annulé.'));
       return;
     }
@@ -82,6 +90,7 @@ class ScannerCubit extends Cubit<ScannerState> {
         // Log OCR brut : indispensable pour déboguer l'extraction.
         debugPrint('[OCR] rawText:\n$rawText');
         final extraction = _parser.parse(rawText: rawText);
+        await _analytics.logScanSuccess(itemCount: extraction.items.length);
         emit(
           state.copyWith(
             isLoading: false,
@@ -93,6 +102,7 @@ class ScannerCubit extends Cubit<ScannerState> {
         textRecognizer.close();
       }
     } catch (e) {
+      await _analytics.logScanFailed(reason: 'ocr_error');
       emit(
         state.copyWith(
           isLoading: false,

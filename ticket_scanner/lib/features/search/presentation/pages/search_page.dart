@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../core/analytics/app_analytics.dart';
 import '../../../../core/money/money_formatter.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../pharmacy/domain/entities/pharmacy.dart';
@@ -97,8 +98,10 @@ class _SearchPageState extends State<SearchPage> {
                 controller: _controller,
                 autofocus: true,
                 textInputAction: TextInputAction.search,
-                onSubmitted: (value) =>
-                    searchContext.read<SearchCubit>().search(value),
+                onSubmitted: (value) {
+                  AppAnalytics().logSearch(query: value);
+                  searchContext.read<SearchCubit>().search(value);
+                },
                 decoration: InputDecoration(
                   labelText: 'Nom du médicament',
                   hintText: 'Ex : paracétamol, amoxicilline…',
@@ -246,6 +249,7 @@ class _MedicationGroupedList extends StatelessWidget {
       onDutyDates: (data['onDutyDates'] as List?)?.cast<String>() ?? const [],
     );
     await showPharmacySheet(context, pharmacy: pharmacy);
+    AppAnalytics().logPharmacyOpened(pharmacyId: pharmacyId);
   }
 }
 

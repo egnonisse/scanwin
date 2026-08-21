@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../core/analytics/app_analytics.dart';
 import '../../../../core/money/money_formatter.dart';
 import '../../data/repositories/firebase_receipt_repository.dart';
 import '../../domain/entities/receipt_extraction.dart';
@@ -143,6 +144,10 @@ class _ConfirmationForm extends StatelessWidget {
   void _onSuccess(BuildContext context, ConfirmationState state) {
     context.read<ConfirmationCubit>().reset();
     context.go('/home');
+    // Analytics : ticket validé + points crédités (fire-and-forget, jamais bloquant).
+    final montant = double.tryParse(montantController.text.replaceAll(',', '.'));
+    AppAnalytics().logTicketSubmitted(amount: montant ?? 0);
+    AppAnalytics().logPointsEarned(points: state.pointsAdded);
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text('+${state.pointsAdded} points crédités !')),
     );
