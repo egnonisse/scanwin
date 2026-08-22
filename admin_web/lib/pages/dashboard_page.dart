@@ -2,6 +2,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
 import '../services/firestore_service.dart';
+import 'ai_settings_page.dart';
 import 'analytics_page.dart';
 import 'campaigns_page.dart';
 import 'guardes_page.dart';
@@ -39,6 +40,7 @@ class _DashboardPageState extends State<DashboardPage> {
       const MedicamentsPage(),
       const UsersPage(),
       const AnalyticsPage(),
+      const AiSettingsPage(),
       const CampaignsPage(),
       const NotificationsPage(),
       const LegalPagesPage(),
@@ -87,6 +89,10 @@ class _DashboardPageState extends State<DashboardPage> {
               NavigationRailDestination(
                 icon: Icon(Icons.insights),
                 label: Text('Analytics'),
+              ),
+              NavigationRailDestination(
+                icon: Icon(Icons.smart_toy),
+                label: Text('Paramètres IA'),
               ),
               NavigationRailDestination(
                 icon: Icon(Icons.campaign),

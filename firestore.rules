@@ -72,6 +72,13 @@ service cloud.firestore {
       allow create, update, delete: if isAdmin();
     }
 
+    // Réglages IA (structuration des reçus) : accessibles uniquement aux
+    // admins (contient la clé API). Champs : enabled, provider, baseUrl,
+    // model, apiKey. La Cloud Function lit ce doc via l'Admin SDK.
+    match /aiSettings/{docId} {
+      allow read, write: if isAdmin();
+    }
+
     // Demandes d'envoi push : écrites par l'admin depuis le dashboard,
     // traitées par la Cloud Function (onDocumentCreated) qui écrit le
     // résultat (sent/failed/status) dans le même doc.

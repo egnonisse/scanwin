@@ -3,7 +3,6 @@
 const crypto = require('crypto');
 const { onCall, HttpsError } = require('firebase-functions/v2/https');
 const { onDocumentCreated } = require('firebase-functions/v2/firestore');
-const { defineSecret } = require('firebase-functions/params');
 const { logger } = require('firebase-functions/logger');
 const admin = require('firebase-admin');
 const { getFirestore, FieldValue, Timestamp } = require('firebase-admin/firestore');
@@ -329,12 +328,14 @@ exports.sendPushOnRequest = onDocumentCreated('pushRequests/{requestId}', async 
 });
 
 // ---------------------------------------------------------------------------
-// Structuration des reçus par IA (DeepSeek) : l'OCR mobile est bruité sur
-// les reçus thermiques → le LLM reconstruit montants, dates, items, quantités
-// à partir du texte brut. L'IMAGE n'est jamais envoyée ici (texte seul).
+// Structuration des reçus par IA : l'OCR mobile est bruité sur les reçus
+// thermiques → un LLM reconstruit montants, dates, items, quantités à partir
+// du texte brut. L'IMAGE n'est jamais envoyée ici (texte seul).
+//
+// Le provider, le modèle et la clé sont paramétrés depuis le DASHBOARD
+// (collection aiSettings, admin uniquement). Formats supportés :
+// API OpenAI-compatible (DeepSeek, OpenAI, proxys custom via baseUrl).
 // ---------------------------------------------------------------------------
-
-const DEEPSEEK_API_KEY = defineSecret('DEEPSEEK_API_KEY');
 
 const PARSE_SYSTEM_PROMPT = `Tu es un extracteur de reçus de pharmacie ivoiriens.
 Tu reçois le texte brut d'un reçu (OCR imparfait : fautes, espaces cassés,
@@ -358,8 +359,31 @@ Règles :
   effort.
 - Réponds UNIQUEMENT le JSON (pas de markdown, pas d'explication).`;
 
+const DEFAULT_AI_URLS = {
+  deepseek: 'https://api.deepseek.com/chat/completions',
+  openai: 'https://api.openai.com/v1/chat/completions',
+};
+
+/** Lit les réglages IA depuis Firestore (aiSettings/default). */
+async function loadAiSettings() {
+  const doc = await db.collection('aiSettings').doc('default').get();
+  if (!doc.exists) return null;
+  const data = doc.data();
+  return {
+    enabled: data.enabled !== false,
+    provider: typeof data.provider === 'string' ? data.provider : 'deepseek',
+    baseUrl: typeof data.baseUrl === 'string' && data.baseUrl.trim()
+      ? data.baseUrl.trim()
+      : null,
+    model: typeof data.model === 'string' && data.model.trim()
+      ? data.model.trim()
+      : 'deepseek-chat',
+    apiKey: typeof data.apiKey === 'string' ? data.apiKey.trim() : '',
+  };
+}
+
 exports.parseReceiptWithAI = onCall(
-  { secrets: [DEEPSEEK_API_KEY], timeoutSeconds: 45 },
+  { timeoutSeconds: 45 },
   async (request) => {
     if (!request.auth) {
       throw new HttpsError('unauthenticated', 'Connexion requise.');
@@ -370,15 +394,24 @@ exports.parseReceiptWithAI = onCall(
       throw new HttpsError('invalid-argument', 'Texte du reçu requis.');
     }
 
-    const apiKey = DEEPSEEK_API_KEY.value();
-    const response = await fetch('https://api.deepseek.com/chat/completions', {
+    const cfg = await loadAiSettings();
+    if (!cfg || !cfg.enabled || !cfg.apiKey) {
+      throw new HttpsError(
+        'failed-precondition',
+        'IA non configurée. Configure-la depuis le dashboard.'
+      );
+    }
+
+    const url = cfg.baseUrl || DEFAULT_AI_URLS[cfg.provider] || DEFAULT_AI_URLS.deepseek;
+
+    const response = await fetch(url, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${apiKey}`,
+        Authorization: `Bearer ${cfg.apiKey}`,
       },
       body: JSON.stringify({
-        model: 'deepseek-chat',
+        model: cfg.model,
         messages: [
           { role: 'system', content: PARSE_SYSTEM_PROMPT },
           { role: 'user', content: rawText.trim().slice(0, 6000) },
