@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../legal/presentation/widgets/legal_section.dart';
 import '../cubit/settings_cubit.dart';
 import '../cubit/settings_state.dart';
 
@@ -57,6 +58,8 @@ class SettingsPage extends StatelessWidget {
                   ),
                 ),
               ],
+              const SizedBox(height: 20),
+              const LegalSection(),
             ],
           );
         },

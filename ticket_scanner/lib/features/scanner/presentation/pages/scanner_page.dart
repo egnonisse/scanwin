@@ -17,10 +17,32 @@ class ScannerPage extends StatelessWidget {
       context: context,
       builder: (dialogContext) {
         return AlertDialog(
-          title: const Text('Autoriser la caméra ?'),
-          content: const Text(
-            "Nous utilisons la caméra pour scanner votre reçu de pharmacie "
-            'et en extraire les informations (pharmacie, date, médicaments, prix).',
+          title: const Text('Scanner un reçu ?'),
+          content: const SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Nous utilisons la caméra pour scanner votre reçu de '
+                  'pharmacie et en extraire les informations (pharmacie, '
+                  'date, médicaments, prix).',
+                ),
+                SizedBox(height: 12),
+                Text(
+                  'Votre reçu contient des données de santé. L\'image est '
+                  'traitée LOCALEMENT sur votre appareil (OCR) et ne quitte '
+                  'jamais votre téléphone. Seules les informations extraites '
+                  'sont enregistrées, sans lien avec votre identité.',
+                  style: TextStyle(fontWeight: FontWeight.w500),
+                ),
+                SizedBox(height: 12),
+                Text(
+                  'En continuant, vous consentez à ce traitement. '
+                  'Détails : Réglages → Consentement scan reçus.',
+                  style: TextStyle(fontSize: 12),
+                ),
+              ],
+            ),
           ),
           actions: [
             TextButton(

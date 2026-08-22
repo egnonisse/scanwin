@@ -72,6 +72,14 @@ service cloud.firestore {
       allow create, update, delete: if isAdmin();
     }
 
+    // Pages légales (politique de confidentialité, CGU, mentions légales,
+    // avertissement médical, consentement) : lues par les utilisateurs
+    // connectés, éditées par l'admin. Champs : key, title, content.
+    match /legalPages/{pageId} {
+      allow read: if request.auth != null;
+      allow create, update, delete: if isAdmin();
+    }
+
     // Référentiel médicaments (ANSM) : lu par les utilisateurs connectés
     // (autocomplétion de la recherche), importé par le scraper admin.
     match /medications/{medicationId} {

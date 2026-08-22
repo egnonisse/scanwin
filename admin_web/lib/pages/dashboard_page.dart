@@ -5,6 +5,7 @@ import '../services/firestore_service.dart';
 import 'analytics_page.dart';
 import 'campaigns_page.dart';
 import 'guardes_page.dart';
+import 'legal_pages_page.dart';
 import 'medicaments_page.dart';
 import 'notifications_page.dart';
 import 'pharmacies_page.dart';
@@ -40,6 +41,7 @@ class _DashboardPageState extends State<DashboardPage> {
       const AnalyticsPage(),
       const CampaignsPage(),
       const NotificationsPage(),
+      const LegalPagesPage(),
       const ReceiptsPage(),
     ];
 
@@ -93,6 +95,10 @@ class _DashboardPageState extends State<DashboardPage> {
               NavigationRailDestination(
                 icon: Icon(Icons.notifications),
                 label: Text('Notifications'),
+              ),
+              NavigationRailDestination(
+                icon: Icon(Icons.gavel),
+                label: Text('Pages légales'),
               ),
               NavigationRailDestination(
                 icon: Icon(Icons.receipt_long),
