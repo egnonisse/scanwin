@@ -30,7 +30,7 @@ def download(name: str, out_dir: str) -> str:
 
 
 def parse_cis(path: str) -> dict:
-    """CIS → {name, form, routes, status, dcis: set}"""
+    """CIS → {name, form, routes, status, titulaire, dcis: set}"""
     meds = {}
     with codecs.open(path, 'r', 'latin-1') as f:
         for line in f:
@@ -42,6 +42,7 @@ def parse_cis(path: str) -> dict:
             form = fields[2].strip()
             routes = fields[3].strip()
             status = fields[6].strip()
+            titulaire = fields[10].strip() if len(fields) > 10 else ''
             if not cis or not name:
                 continue
             meds[cis] = {
@@ -49,6 +50,7 @@ def parse_cis(path: str) -> dict:
                 'form': form,
                 'routes': routes,
                 'status': status,
+                'titulaire': titulaire,
                 'dcis': set(),
             }
     return meds
@@ -77,6 +79,7 @@ def to_firestore_docs(meds: dict, commercialised_only: bool) -> list[dict]:
             'form': m['form'],
             'routes': m['routes'],
             'dcis': sorted(m['dcis']),
+            'titulaire': m['titulaire'],
             'status': m['status'],
             'source': 'ansm_bdpm',
         })

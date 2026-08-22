@@ -10,6 +10,8 @@ import '../../../pharmacy/domain/entities/pharmacy.dart';
 import '../../../pharmacy/presentation/pages/pharmacies_page.dart';
 import '../../../pharmacy/presentation/widgets/pharmacy_sheet.dart';
 import '../../data/repositories/firebase_price_repository.dart';
+import '../../data/repositories/firebase_medication_repository.dart';
+import '../../domain/entities/medication.dart';
 import '../../domain/entities/price_entry.dart';
 import '../cubit/search_cubit.dart';
 import '../cubit/search_state.dart';
@@ -82,8 +84,10 @@ class _SearchPageState extends State<SearchPage> {
     final query = _controller.text.trim();
     return BlocProvider(
       create: (_) {
-        final cubit =
-            SearchCubit(repository: const FirebasePriceRepository());
+        final cubit = SearchCubit(
+          repository: const FirebasePriceRepository(),
+          medicationRepository: const FirebaseMedicationRepository(),
+        );
         if (query.length >= 3) {
           cubit.search(query);
         }
@@ -140,16 +144,42 @@ class _SearchPageState extends State<SearchPage> {
                           ),
                         );
                       }
-                      if (state.results.isEmpty) {
+                      if (state.results.isEmpty && state.medications.isEmpty) {
                         return const Center(
                           child: Text(
-                            'Aucun prix trouvé pour ce médicament.',
+                            'Aucun résultat. Essaie un autre nom ou scanne '
+                            'un ticket pour ajouter un prix.',
+                            textAlign: TextAlign.center,
                           ),
                         );
                       }
-                      return _MedicationGroupedList(
-                        entries: state.results,
-                        currencyCode: settings.currencyCode,
+                      return ListView(
+                        padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                        children: [
+                          if (state.results.isNotEmpty) ...[
+                            Text(
+                              'Prix trouvés',
+                              style: Theme.of(context).textTheme.titleMedium,
+                            ),
+                            const SizedBox(height: 8),
+                            ..._buildPriceGroups(
+                              context,
+                              state.results,
+                              settings.currencyCode,
+                            ),
+                            if (state.medications.isNotEmpty)
+                              const SizedBox(height: 16),
+                          ],
+                          if (state.medications.isNotEmpty) ...[
+                            Text(
+                              'Médicaments (prix indisponible)',
+                              style: Theme.of(context).textTheme.titleMedium,
+                            ),
+                            const SizedBox(height: 8),
+                            for (final med in state.medications)
+                              _MedicationTile(medication: med),
+                          ],
+                        ],
                       );
                     },
                   );
@@ -163,94 +193,137 @@ class _SearchPageState extends State<SearchPage> {
   }
 }
 
-/// Liste des résultats groupés par médicament ; chaque médicament est un
-/// expansion tile dont le contenu liste les pharmacies triées par prix
-/// croissant (moins cher en premier).
-class _MedicationGroupedList extends StatelessWidget {
-  const _MedicationGroupedList({
-    required this.entries,
-    required this.currencyCode,
-  });
+/// Génére les cartes de résultats AVEC prix, groupées par médicament et
+/// triées par prix croissant (moins cher en premier).
+List<Widget> _buildPriceGroups(
+  BuildContext context,
+  List<PriceEntry> entries,
+  String currencyCode,
+) {
+  final groups = <String, List<PriceEntry>>{};
+  for (final entry in entries) {
+    groups.putIfAbsent(entry.medicationName, () => []).add(entry);
+  }
+  for (final list in groups.values) {
+    list.sort((a, b) => a.price.compareTo(b.price));
+  }
+  final sortedNames = groups.keys.toList()..sort((a, b) => a.compareTo(b));
 
-  final List<PriceEntry> entries;
-  final String currencyCode;
+  return [
+    for (final name in sortedNames)
+      Card(
+        child: ExpansionTile(
+          leading: const Icon(Icons.medication),
+          title: Text(
+            name,
+            style: const TextStyle(fontWeight: FontWeight.w600),
+          ),
+          subtitle: Text(
+            'Dès ${MoneyFormatter.formatAmount(groups[name]!.first.price, currencyCode)} '
+            '— ${groups[name]!.length} pharmacie${groups[name]!.length > 1 ? 's' : ''}',
+          ),
+          children: [
+            for (final entry in groups[name]!)
+              ListTile(
+                dense: true,
+                leading: const Icon(Icons.local_pharmacy_outlined),
+                title: Text(
+                  entry.pharmacyName ?? entry.pharmacyId,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                trailing: Text(
+                  MoneyFormatter.formatAmount(entry.price, currencyCode),
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
+                onTap: () => _openPharmacySheet(context, entry.pharmacyId),
+              ),
+          ],
+        ),
+      ),
+  ];
+}
+
+/// Fiche d'un médicament SANS prix (référentiel ANSM) : nom, DCI,
+/// laboratoire, et invitation à scanner un ticket pour révéler le prix.
+class _MedicationTile extends StatelessWidget {
+  const _MedicationTile({required this.medication});
+
+  final Medication medication;
 
   @override
   Widget build(BuildContext context) {
-    final groups = <String, List<PriceEntry>>{};
-    for (final entry in entries) {
-      groups.putIfAbsent(entry.medicationName, () => []).add(entry);
-    }
-
-    // Trier chaque groupe par prix croissant.
-    for (final list in groups.values) {
-      list.sort((a, b) => a.price.compareTo(b.price));
-    }
-
-    final sortedNames = groups.keys.toList()
-      ..sort((a, b) => a.compareTo(b));
-
-    return ListView.builder(
-      itemCount: sortedNames.length,
-      itemBuilder: (context, index) {
-        final name = sortedNames[index];
-        final group = groups[name]!;
-        final lowest = group.first;
-        return Card(
-          child: ExpansionTile(
-            leading: const Icon(Icons.medication),
-            title: Text(
-              name,
-              style: const TextStyle(fontWeight: FontWeight.w600),
+    return Card(
+      margin: const EdgeInsets.only(bottom: 8),
+      child: ListTile(
+        leading: const Icon(Icons.medication),
+        title: Text(
+          medication.name,
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+          style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+        ),
+        subtitle: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (medication.dcis.isNotEmpty)
+              Text(
+                medication.dciLabel,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(fontSize: 12),
+              ),
+            if (medication.titulaire != null &&
+                medication.titulaire!.isNotEmpty)
+              Text(
+                medication.titulaire!,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(fontSize: 11),
+              ),
+            const SizedBox(height: 2),
+            Text(
+              'Prix indisponible — scanne un ticket pour le révéler',
+              style: TextStyle(
+                fontSize: 11,
+                color: Theme.of(context).colorScheme.primary,
+                fontWeight: FontWeight.w500,
+              ),
             ),
-            subtitle: Text(
-              'Dès ${MoneyFormatter.formatAmount(lowest.price, currencyCode)} '
-              '— ${group.length} pharmacie${group.length > 1 ? 's' : ''}',
-            ),
-            children: [
-              for (final entry in group)
-                ListTile(
-                  dense: true,
-                  leading: const Icon(Icons.local_pharmacy_outlined),
-                  title: Text(
-                    entry.pharmacyName ?? entry.pharmacyId,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  trailing: Text(
-                    MoneyFormatter.formatAmount(entry.price, currencyCode),
-                    style: Theme.of(context).textTheme.titleMedium,
-                  ),
-                  onTap: () => _openPharmacy(context, entry.pharmacyId),
-                ),
-            ],
-          ),
-        );
-      },
+          ],
+        ),
+        trailing: IconButton(
+          tooltip: 'Scanner un ticket',
+          icon: const Icon(Icons.qr_code_scanner),
+          color: Theme.of(context).colorScheme.primary,
+          onPressed: () => context.push('/scanner'),
+        ),
+        isThreeLine: true,
+      ),
     );
   }
+}
 
-  /// Ouvre la fiche pharmacie (récupère le doc par id, puis bottom sheet).
-  Future<void> _openPharmacy(BuildContext context, String pharmacyId) async {
-    final doc = await FirebaseFirestore.instance
-        .collection('pharmacies')
-        .doc(pharmacyId)
-        .get();
-    if (!doc.exists || !context.mounted) return;
-    final data = doc.data() ?? <String, dynamic>{};
-    final pharmacy = Pharmacy(
-      id: doc.id,
-      name: data['name'] as String? ?? doc.id,
-      address: data['address'] as String?,
-      commune: data['commune'] as String?,
-      phone1: data['phone1'] as String?,
-      phone2: data['phone2'] as String?,
-      lat: (data['lat'] as num?)?.toDouble(),
-      lng: (data['lng'] as num?)?.toDouble(),
-      onDutyDates: (data['onDutyDates'] as List?)?.cast<String>() ?? const [],
-    );
-    await showPharmacySheet(context, pharmacy: pharmacy);
-    AppAnalytics().logPharmacyOpened(pharmacyId: pharmacyId);
-  }
+/// Ouvre la fiche pharmacie (récupère le doc par id, puis bottom sheet).
+Future<void> _openPharmacySheet(BuildContext context, String pharmacyId) async {
+  final doc = await FirebaseFirestore.instance
+      .collection('pharmacies')
+      .doc(pharmacyId)
+      .get();
+  if (!doc.exists || !context.mounted) return;
+  final data = doc.data() ?? <String, dynamic>{};
+  final pharmacy = Pharmacy(
+    id: doc.id,
+    name: data['name'] as String? ?? doc.id,
+    address: data['address'] as String?,
+    commune: data['commune'] as String?,
+    phone1: data['phone1'] as String?,
+    phone2: data['phone2'] as String?,
+    lat: (data['lat'] as num?)?.toDouble(),
+    lng: (data['lng'] as num?)?.toDouble(),
+    onDutyDates: (data['onDutyDates'] as List?)?.cast<String>() ?? const [],
+  );
+  await showPharmacySheet(context, pharmacy: pharmacy);
+  AppAnalytics().logPharmacyOpened(pharmacyId: pharmacyId);
 }
 
 /// Onglets Médicaments / Pharmacies au style design system (fond gris,
