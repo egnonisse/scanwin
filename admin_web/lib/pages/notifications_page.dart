@@ -1,6 +1,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 
+import '../widgets/image_picker_field.dart';
+
 /// Page Notifications — CRUD des popups in-app (annonces).
 /// Types : promo, rappel (prise de médicaments), info.
 class NotificationsPage extends StatefulWidget {
@@ -97,6 +99,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
     var type = data['type']?.toString() ?? 'info';
     var active = data['active'] as bool? ?? true;
     var oncePerUser = data['oncePerUser'] as bool? ?? true;
+    var imageUrl = data['imageUrl']?.toString();
 
     final saved = await showDialog<bool>(
       context: context,
@@ -160,6 +163,13 @@ class _NotificationsPageState extends State<NotificationsPage> {
                           border: OutlineInputBorder()),
                       keyboardType: TextInputType.url,
                     ),
+                    const SizedBox(height: 12),
+                    ImagePickerField(
+                      prefix: 'announcementImages',
+                      initialUrl: imageUrl,
+                      onChanged: (url) => imageUrl = url,
+                    ),
+                    const SizedBox(height: 8),
                     SwitchListTile(
                       contentPadding: EdgeInsets.zero,
                       title: const Text('Active'),
@@ -212,6 +222,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
           : ctaUrlController.text.trim(),
       'active': active,
       'oncePerUser': oncePerUser,
+      if (imageUrl != null && imageUrl!.isNotEmpty) 'imageUrl': imageUrl,
     };
 
     if (doc == null) {

@@ -137,10 +137,27 @@ class _Banner extends StatelessWidget {
           borderRadius: BorderRadius.circular(5),
           onTap: onTap,
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
             child: Row(
               children: [
-                const Icon(Icons.campaign, color: Colors.white, size: 28),
+                if (campaign.imageUrl != null &&
+                    campaign.imageUrl!.isNotEmpty)
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(5),
+                    child: Image.network(
+                      campaign.imageUrl!,
+                      width: 56,
+                      height: 56,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, _, _) => const Icon(
+                        Icons.campaign,
+                        color: Colors.white,
+                        size: 28,
+                      ),
+                    ),
+                  )
+                else
+                  const Icon(Icons.campaign, color: Colors.white, size: 28),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Column(

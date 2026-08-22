@@ -1,6 +1,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 
+import '../widgets/image_picker_field.dart';
+
 /// Page Campagnes — CRUD des bannières affichées dans l'app (home, sous la
 /// recherche). Usages : pub pharmacie, annonces de jeux, infos.
 class CampaignsPage extends StatefulWidget {
@@ -84,6 +86,7 @@ class _CampaignsPageState extends State<CampaignsPage> {
     final orderController = TextEditingController(
         text: (data['sortOrder'] as num?)?.toString() ?? '0');
     var active = data['active'] as bool? ?? true;
+    var imageUrl = data['imageUrl']?.toString();
     DateTime? startDate = (data['startDate'] as Timestamp?)?.toDate();
     DateTime? endDate = (data['endDate'] as Timestamp?)?.toDate();
 
@@ -136,6 +139,12 @@ class _CampaignsPageState extends State<CampaignsPage> {
                           labelText: 'Ordre d\'affichage',
                           border: OutlineInputBorder()),
                       keyboardType: TextInputType.number,
+                    ),
+                    const SizedBox(height: 12),
+                    ImagePickerField(
+                      prefix: 'campaignImages',
+                      initialUrl: imageUrl,
+                      onChanged: (url) => imageUrl = url,
                     ),
                     const SizedBox(height: 8),
                     Row(
@@ -229,7 +238,8 @@ class _CampaignsPageState extends State<CampaignsPage> {
     if (saved != true || !mounted) return;
 
     final colorHex = colorController.text.trim();
-    final color = _parseHex(colorHex) ?? const Color(0xFF0E7A5F);
+    // Validation du format : retombe sur le vert PharmaScan si invalide.
+    _parseHex(colorHex);
 
     final payload = {
       'title': titleController.text.trim(),
@@ -241,6 +251,7 @@ class _CampaignsPageState extends State<CampaignsPage> {
       'textColor': '#FFFFFF',
       'sortOrder': int.tryParse(orderController.text) ?? 0,
       'active': active,
+      if (imageUrl != null && imageUrl!.isNotEmpty) 'imageUrl': imageUrl,
       if (startDate != null)
         'startDate': Timestamp.fromDate(DateTime(
             startDate!.year, startDate!.month, startDate!.day)),

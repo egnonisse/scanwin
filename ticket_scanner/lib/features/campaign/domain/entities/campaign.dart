@@ -5,12 +5,16 @@ class Campaign {
     this.subtitle,
     this.url,
     this.backgroundColorHex,
+    this.imageUrl,
     this.active = true,
   });
 
   final String title;
   final String? subtitle;
   final String? url;
+
+  /// Image optionnelle (logo/visuel) — URL Firebase Storage.
+  final String? imageUrl;
 
   /// Couleur de fond au format '#RRGGBB' (défaut : vert PharmaScan).
   final String? backgroundColorHex;

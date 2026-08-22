@@ -30,6 +30,7 @@ class FirebaseCampaignRepository {
           subtitle: data['subtitle']?.toString(),
           url: data['url']?.toString(),
           backgroundColorHex: data['backgroundColor']?.toString(),
+          imageUrl: data['imageUrl']?.toString(),
         ));
       }
       return campaigns.where((c) => c.title.isNotEmpty).toList();

@@ -31,6 +31,7 @@ class FirebaseAnnouncementRepository {
           type: data['type']?.toString() ?? 'info',
           ctaLabel: data['ctaLabel']?.toString(),
           ctaUrl: data['ctaUrl']?.toString(),
+          imageUrl: data['imageUrl']?.toString(),
           oncePerUser: data['oncePerUser'] as bool? ?? true,
         ));
       }

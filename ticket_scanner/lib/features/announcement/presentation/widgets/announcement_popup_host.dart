@@ -111,6 +111,23 @@ class _AnnouncementDialog extends StatelessWidget {
     }
   }
 
+  /// Icône dégradée utilisée quand il n'y a pas d'image.
+  Widget _fallbackIcon(Color color, IconData icon) {
+    return Container(
+      width: 56,
+      height: 56,
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [color, color.withValues(alpha: 0.75)],
+        ),
+        borderRadius: BorderRadius.circular(5),
+      ),
+      child: Icon(icon, color: Colors.white, size: 28),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final icon = _typeIcons[announcement.type] ?? Icons.info;
@@ -118,19 +135,18 @@ class _AnnouncementDialog extends StatelessWidget {
 
     return AlertDialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(5)),
-      icon: Container(
-        width: 56,
-        height: 56,
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [color, color.withValues(alpha: 0.75)],
-          ),
-          borderRadius: BorderRadius.circular(5),
-        ),
-        child: Icon(icon, color: Colors.white, size: 28),
-      ),
+      icon: announcement.imageUrl != null && announcement.imageUrl!.isNotEmpty
+          ? ClipRRect(
+              borderRadius: BorderRadius.circular(5),
+              child: Image.network(
+                announcement.imageUrl!,
+                width: 180,
+                height: 110,
+                fit: BoxFit.cover,
+                errorBuilder: (_, _, _) => _fallbackIcon(color, icon),
+              ),
+            )
+          : _fallbackIcon(color, icon),
       title: Text(
         announcement.title,
         textAlign: TextAlign.center,

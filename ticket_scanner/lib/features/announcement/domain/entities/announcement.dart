@@ -7,6 +7,7 @@ class Announcement {
     this.type = 'info',
     this.ctaLabel,
     this.ctaUrl,
+    this.imageUrl,
     this.oncePerUser = true,
   });
 
@@ -19,6 +20,9 @@ class Announcement {
 
   final String? ctaLabel;
   final String? ctaUrl;
+
+  /// Image optionnelle (visuel pleine largeur) — URL Firebase Storage.
+  final String? imageUrl;
 
   /// true = affichée une seule fois par utilisateur (mémorisé localement).
   final bool oncePerUser;
