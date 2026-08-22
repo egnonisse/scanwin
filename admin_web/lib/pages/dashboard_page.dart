@@ -2,9 +2,12 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
 import '../services/firestore_service.dart';
+import 'analytics_page.dart';
 import 'guardes_page.dart';
+import 'medicaments_page.dart';
 import 'pharmacies_page.dart';
 import 'receipts_page.dart';
+import 'users_page.dart';
 
 class DashboardPage extends StatefulWidget {
   const DashboardPage({super.key});
@@ -30,6 +33,9 @@ class _DashboardPageState extends State<DashboardPage> {
       _StatsView(loadStats: _loadStats),
       const PharmaciesPage(),
       const GuardesPage(),
+      const MedicamentsPage(),
+      const UsersPage(),
+      const AnalyticsPage(),
       const ReceiptsPage(),
     ];
 
@@ -66,6 +72,21 @@ class _DashboardPageState extends State<DashboardPage> {
                 icon: Icon(Icons.local_hospital_outlined),
                 selectedIcon: Icon(Icons.local_hospital),
                 label: Text('Gardes'),
+              ),
+              NavigationRailDestination(
+                icon: Icon(Icons.medication_outlined),
+                selectedIcon: Icon(Icons.medication),
+                label: Text('Prix'),
+              ),
+              NavigationRailDestination(
+                icon: Icon(Icons.people_outline),
+                selectedIcon: Icon(Icons.people),
+                label: Text('Utilisateurs'),
+              ),
+              NavigationRailDestination(
+                icon: Icon(Icons.insights_outlined),
+                selectedIcon: Icon(Icons.insights),
+                label: Text('Analytics'),
               ),
               NavigationRailDestination(
                 icon: Icon(Icons.receipt_long_outlined),
