@@ -297,9 +297,13 @@ exports.sendPushOnRequest = onDocumentCreated('pushRequests/{requestId}', async 
 
     const payload = {
       notification: { title: title.trim(), body: body.trim() },
-      data: imageUrl && typeof imageUrl === 'string' ? { imageUrl } : {},
       android: { priority: 'high' },
     };
+    // Piège FCM : data {} VIDE est refusé (« internal error »).
+    // On n'ajoute data que s'il y a au moins une entrée.
+    if (imageUrl && typeof imageUrl === 'string' && imageUrl.length > 0) {
+      payload.data = { imageUrl };
+    }
 
     let sent = 0;
     let failed = 0;
