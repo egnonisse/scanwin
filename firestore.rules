@@ -72,6 +72,13 @@ service cloud.firestore {
       allow create, update, delete: if isAdmin();
     }
 
+    // Référentiel médicaments (ANSM) : lu par les utilisateurs connectés
+    // (autocomplétion de la recherche), importé par le scraper admin.
+    match /medications/{medicationId} {
+      allow read: if request.auth != null;
+      allow create, update, delete: if isAdmin();
+    }
+
     // Historique des points : lecture par le propriétaire uniquement,
     // écriture par la Cloud Function uniquement.
     match /users/{userId}/pointsEvents/{eventId} {
