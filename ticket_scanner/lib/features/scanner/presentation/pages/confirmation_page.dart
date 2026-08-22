@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
@@ -29,7 +30,29 @@ class _ConfirmationPageState extends State<ConfirmationPage> {
   /// Chemin de la photo du reçu (envoyée au serveur pour archivage).
   String? _imagePath;
 
+  /// Noms des pharmacies connues (autocomplétion du champ Pharmacie).
+  List<String> _pharmacyNames = [];
+
   bool _initialized = false;
+
+  Future<void> _loadPharmacies() async {
+    try {
+      final snapshot = await FirebaseFirestore.instance
+          .collection('pharmacies')
+          .limit(1000)
+          .get();
+      if (!mounted) return;
+      setState(() {
+        _pharmacyNames = snapshot.docs
+            .map((d) => (d.data()['name'] as String?)?.trim() ?? '')
+            .where((n) => n.isNotEmpty)
+            .toList()
+          ..sort();
+      });
+    } catch (_) {
+      // Hors ligne : l'utilisateur saisit librement.
+    }
+  }
 
   @override
   void didChangeDependencies() {
@@ -53,6 +76,9 @@ class _ConfirmationPageState extends State<ConfirmationPage> {
     _dateController.text = extraction.dateTicket ?? '';
     _items = List<ReceiptItem>.from(extraction.items);
     _imagePath = imagePath;
+
+    // Autocomplétion pharmacie (811 officines connues).
+    _loadPharmacies();
   }
 
   @override
@@ -105,6 +131,7 @@ class _ConfirmationPageState extends State<ConfirmationPage> {
               pharmacyController: _pharmacyController,
               montantController: _montantController,
               dateController: _dateController,
+              pharmacyNames: _pharmacyNames,
               items: _items,
               imagePath: _imagePath,
               onUpdateItem: _updateItem,
@@ -124,6 +151,7 @@ class _ConfirmationForm extends StatelessWidget {
     required this.pharmacyController,
     required this.montantController,
     required this.dateController,
+    required this.pharmacyNames,
     required this.items,
     required this.imagePath,
     required this.onUpdateItem,
@@ -135,6 +163,7 @@ class _ConfirmationForm extends StatelessWidget {
   final TextEditingController pharmacyController;
   final TextEditingController montantController;
   final TextEditingController dateController;
+  final List<String> pharmacyNames;
   final List<ReceiptItem> items;
   final String? imagePath;
   final void Function(int, String, double) onUpdateItem;
@@ -186,11 +215,34 @@ class _ConfirmationForm extends StatelessWidget {
           const SizedBox(height: 12),
           if (formattedAmount != null) Text(formattedAmount),
           const SizedBox(height: 24),
-          TextField(
-            controller: pharmacyController,
-            decoration: const InputDecoration(
-              labelText: 'Pharmacie',
-            ),
+          Autocomplete<String>(
+            initialValue: TextEditingValue(text: pharmacyController.text),
+            fieldViewBuilder:
+                (context, textController, focusNode, onFieldSubmitted) {
+              return TextField(
+                controller: textController,
+                focusNode: focusNode,
+                onChanged: (value) => pharmacyController.text = value,
+                decoration: const InputDecoration(
+                  labelText: 'Pharmacie',
+                  helperText: 'Choisis dans la liste ou écris librement',
+                ),
+              );
+            },
+            optionsBuilder: (textEditingValue) {
+              if (pharmacyNames.isEmpty) return const Iterable<String>.empty();
+              final query = textEditingValue.text.trim().toLowerCase();
+              if (query.isEmpty) {
+                // Saisie vide : aucune suggestion (évite une liste de 811).
+                return const Iterable<String>.empty();
+              }
+              return pharmacyNames
+                  .where((name) => name.toLowerCase().contains(query))
+                  .take(15);
+            },
+            onSelected: (value) {
+              pharmacyController.text = value;
+            },
           ),
           const SizedBox(height: 12),
           TextField(

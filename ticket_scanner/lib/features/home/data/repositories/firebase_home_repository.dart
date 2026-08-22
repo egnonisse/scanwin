@@ -25,11 +25,31 @@ class FirebaseHomeRepository implements HomeRepository {
   @override
   Stream<ContributorProfile> watchProfile() {
     final ref = _firestore.collection('users').doc(_uid);
-    return ref.snapshots().map((doc) {
+    return ref.snapshots().asyncMap((doc) async {
       final data = doc.data() ?? <String, dynamic>{};
+      // Seuils configurables (dashboard → pointsConfig/default), avec
+      // fallback sur les valeurs par défaut.
+      var bronze = defaultBronzeThreshold;
+      var silver = defaultSilverThreshold;
+      var gold = defaultGoldThreshold;
+      try {
+        final configDoc = await _firestore
+            .collection('pointsConfig')
+            .doc('default')
+            .get();
+        final config = configDoc.data() ?? <String, dynamic>{};
+        bronze = (config['bronzeThreshold'] as num?)?.toInt() ?? bronze;
+        silver = (config['silverThreshold'] as num?)?.toInt() ?? silver;
+        gold = (config['goldThreshold'] as num?)?.toInt() ?? gold;
+      } catch (_) {
+        // Hors ligne / config absente : seuils par défaut.
+      }
       return ContributorProfile(
         points: (data['points'] as num?)?.toInt() ?? 0,
         contributions: (data['contributions'] as num?)?.toInt() ?? 0,
+        bronzeThreshold: bronze,
+        silverThreshold: silver,
+        goldThreshold: gold,
       );
     });
   }

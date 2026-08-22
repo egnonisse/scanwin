@@ -175,10 +175,10 @@ class _ContributorHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tier = profile.tier;
-    final next = tier.nextThreshold;
+    final next = profile.nextThreshold;
     final progressLabel = next == null
         ? 'Niveau maximum'
-        : 'Encore ${next - profile.contributions} reçus '
+        : 'Encore ${profile.pointsToNext} points '
             'pour passer ${tier.label} → ${_nextTierLabel(tier)}';
 
     return Container(
@@ -250,7 +250,7 @@ class _ContributorHeader extends StatelessWidget {
             child: LinearProgressIndicator(
               value: next == null
                   ? 1
-                  : ((profile.contributions / next).clamp(0.0, 1.0)),
+                  : ((profile.points / next).clamp(0.0, 1.0)),
               minHeight: 6,
               backgroundColor: const Color(0xFFE8EFE9),
               valueColor: const AlwaysStoppedAnimation<Color>(AppColors.secondary),

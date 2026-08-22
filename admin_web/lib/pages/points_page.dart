@@ -15,6 +15,9 @@ class PointsPage extends StatefulWidget {
 
 class _PointsPageState extends State<PointsPage> {
   final _configController = TextEditingController();
+  final _bronzeController = TextEditingController();
+  final _silverController = TextEditingController();
+  final _goldController = TextEditingController();
   bool _loading = true;
   bool _savingConfig = false;
 
@@ -30,18 +33,33 @@ class _PointsPageState extends State<PointsPage> {
         .doc('default')
         .get();
     if (!mounted) return;
+    final data = doc.data() ?? const {};
     setState(() {
-      _configController.text = doc.exists
-          ? ((doc.data()?['pointsPerReceipt'] as num?)?.toString() ?? '10')
-          : '10';
+      _configController.text =
+          (data['pointsPerReceipt'] as num?)?.toString() ?? '10';
+      _bronzeController.text =
+          (data['bronzeThreshold'] as num?)?.toString() ?? '50';
+      _silverController.text =
+          (data['silverThreshold'] as num?)?.toString() ?? '200';
+      _goldController.text =
+          (data['goldThreshold'] as num?)?.toString() ?? '500';
       _loading = false;
     });
   }
 
   Future<void> _saveConfig() async {
     final value = int.tryParse(_configController.text.trim());
-    if (value == null || value <= 0) {
-      _setStatus('Montant invalide (entier positif requis).', error: true);
+    final bronze = int.tryParse(_bronzeController.text.trim());
+    final silver = int.tryParse(_silverController.text.trim());
+    final gold = int.tryParse(_goldController.text.trim());
+    if (value == null || value <= 0 ||
+        bronze == null || silver == null || gold == null) {
+      _setStatus('Valeurs invalides (entiers positifs requis).', error: true);
+      return;
+    }
+    if (!(bronze < silver && silver < gold)) {
+      _setStatus('Les seuils doivent être croissants : Bronze < Argent < Or.',
+          error: true);
       return;
     }
     setState(() => _savingConfig = true);
@@ -51,9 +69,14 @@ class _PointsPageState extends State<PointsPage> {
           .doc('default')
           .set({
         'pointsPerReceipt': value,
+        'bronzeThreshold': bronze,
+        'silverThreshold': silver,
+        'goldThreshold': gold,
         'updatedAt': FieldValue.serverTimestamp(),
       });
-      _setStatus('✅ Points par scan = $value (appliqué au prochain scan).');
+      _setStatus('✅ Config enregistrée (points/scan = $value, '
+          'niveaux $bronze/$silver/$gold). L\'app met à jour les niveaux '
+          'automatiquement.');
     } catch (e) {
       _setStatus('Erreur : $e', error: true);
     } finally {
@@ -108,15 +131,56 @@ class _PointsPageState extends State<PointsPage> {
                   ),
                 ),
                 const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        controller: _bronzeController,
+                        enabled: !_loading,
+                        keyboardType: TextInputType.number,
+                        decoration: const InputDecoration(
+                          labelText: 'Seuil Bronze',
+                          border: OutlineInputBorder(),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: TextField(
+                        controller: _silverController,
+                        enabled: !_loading,
+                        keyboardType: TextInputType.number,
+                        decoration: const InputDecoration(
+                          labelText: 'Seuil Argent',
+                          border: OutlineInputBorder(),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: TextField(
+                        controller: _goldController,
+                        enabled: !_loading,
+                        keyboardType: TextInputType.number,
+                        decoration: const InputDecoration(
+                          labelText: 'Seuil Or',
+                          border: OutlineInputBorder(),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Niveaux basés sur les POINTS (lus par l\'app à chaque '
+                  'ouverture — changements immédiats).',
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+                const SizedBox(height: 12),
                 FilledButton.icon(
                   onPressed: _savingConfig || _loading ? null : _saveConfig,
                   icon: const Icon(Icons.save, size: 18),
                   label: Text(_savingConfig ? 'Enregistrement…' : 'Enregistrer'),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'Niveaux (fixes dans l\'app) : Bronze 50 · Argent 200 · Or 500',
-                  style: Theme.of(context).textTheme.bodySmall,
                 ),
               ],
             ),
