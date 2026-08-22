@@ -13,6 +13,13 @@ class AiSettingsPage extends StatefulWidget {
 }
 
 class _AiSettingsPageState extends State<AiSettingsPage> {
+  /// Modèles préchargés par fournisseur (liste déroulante).
+  static const _modelsByProvider = <String, List<String>>{
+    'deepseek': ['deepseek-chat', 'deepseek-reasoner'],
+    'openai': ['gpt-4o-mini', 'gpt-4o', 'gpt-4.1-mini', 'gpt-4.1'],
+    'custom': ['gpt-4o-mini', 'deepseek-chat'],
+  };
+
   final _formKey = GlobalKey<FormState>();
   final _apiKeyController = TextEditingController();
   final _modelController = TextEditingController();
@@ -21,6 +28,10 @@ class _AiSettingsPageState extends State<AiSettingsPage> {
   String _provider = 'deepseek';
   bool _enabled = true;
   bool _saving = false;
+
+  String? get _selectedModel => _modelController.text.trim().isEmpty
+      ? null
+      : _modelController.text.trim();
 
   @override
   void initState() {
@@ -125,17 +136,45 @@ class _AiSettingsPageState extends State<AiSettingsPage> {
                           value: 'custom',
                           child: Text('Custom (URL OpenAI-compatible)')),
                     ],
-                    onChanged: (v) =>
-                        setState(() => _provider = v ?? 'deepseek'),
+                    onChanged: (v) {
+                      setState(() {
+                        _provider = v ?? 'deepseek';
+                        // Modèle par défaut du nouveau fournisseur.
+                        final models = _modelsByProvider[_provider] ?? const [];
+                        if (!models.contains(_selectedModel) &&
+                            models.isNotEmpty) {
+                          _modelController.text = models.first;
+                        }
+                      });
+                    },
                   ),
                   const SizedBox(height: 12),
-                  TextFormField(
-                    controller: _modelController,
+                  DropdownButtonFormField<String>(
+                    initialValue: _selectedModel,
                     decoration: const InputDecoration(
                       labelText: 'Modèle',
-                      hintText: 'deepseek-chat, gpt-4o-mini…',
                       border: OutlineInputBorder(),
                     ),
+                    items: [
+                      // Toujours inclure le modèle actuel s'il n'est pas
+                      // dans la liste (ex : stocké depuis un autre provider).
+                      if (_selectedModel != null &&
+                          !(_modelsByProvider[_provider] ?? const [])
+                              .contains(_selectedModel))
+                        DropdownMenuItem(
+                          value: _selectedModel,
+                          child: Text(_selectedModel!),
+                        ),
+                      for (final model
+                          in _modelsByProvider[_provider] ?? const [])
+                        DropdownMenuItem(
+                          value: model,
+                          child: Text(model),
+                        ),
+                    ],
+                    onChanged: (v) {
+                      if (v != null) _modelController.text = v;
+                    },
                   ),
                   const SizedBox(height: 12),
                   TextFormField(
