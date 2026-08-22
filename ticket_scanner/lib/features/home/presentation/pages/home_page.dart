@@ -374,7 +374,8 @@ class _OnDutySection extends StatelessWidget {
 class _PopularMedsSection extends StatelessWidget {
   const _PopularMedsSection();
 
-  static const _meds = [
+  /// Fallback affiché tant qu'aucun reçu n'a été scanné.
+  static const _fallbackMeds = [
     'paracétamol',
     'amoxicilline',
     'ibuprofène',
@@ -389,7 +390,7 @@ class _PopularMedsSection extends StatelessWidget {
       children: [
         Row(
           children: [
-            Text('Médicaments populaires',
+            Text('Médicaments récents',
                 style: Theme.of(context).textTheme.titleMedium),
             const Spacer(),
             TextButton(
@@ -399,19 +400,64 @@ class _PopularMedsSection extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 8),
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: [
-            for (final med in _meds)
-              ActionChip(
-                avatar: const Icon(Icons.medication, size: 18, color: AppColors.primary),
-                label: Text(med),
-                labelStyle: Theme.of(context).textTheme.labelMedium,
-                onPressed: () => context.push('/search?q=${Uri.encodeQueryComponent(med)}'),
-              ),
-          ],
+        // Les médicaments RÉELLEMENT scannés (priceEntries), les plus
+        // récents d'abord, dédupliqués par nom. Fallback sur la liste de
+        // démarrage si la base est vide.
+        StreamBuilder<QuerySnapshot>(
+          stream: FirebaseFirestore.instance
+              .collection('priceEntries')
+              .orderBy('scannedAt', descending: true)
+              .limit(50)
+              .snapshots(),
+          builder: (context, snapshot) {
+            if (snapshot.hasError || !snapshot.hasData) {
+              return _ChipsRow(meds: _fallbackMeds);
+            }
+            final seen = <String>{};
+            final recent = <String>[];
+            for (final doc in snapshot.data!.docs) {
+              final name = ((doc.data() as Map?)?['medicationName'] as String?)
+                      ?.trim() ??
+                  '';
+              if (name.isEmpty) continue;
+              final key = name.toLowerCase();
+              if (seen.add(key)) {
+                recent.add(name);
+                if (recent.length >= 10) break;
+              }
+            }
+            if (recent.isEmpty) {
+              return _ChipsRow(meds: _fallbackMeds);
+            }
+            return _ChipsRow(meds: recent);
+          },
         ),
+      ],
+    );
+  }
+}
+
+/// Rangée de chips cliquables (nom → recherche pré-remplie).
+class _ChipsRow extends StatelessWidget {
+  const _ChipsRow({required this.meds});
+
+  final List<String> meds;
+
+  @override
+  Widget build(BuildContext context) {
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      children: [
+        for (final med in meds)
+          ActionChip(
+            avatar: const Icon(Icons.medication,
+                size: 18, color: AppColors.primary),
+            label: Text(med),
+            labelStyle: Theme.of(context).textTheme.labelMedium,
+            onPressed: () =>
+                context.push('/search?q=${Uri.encodeQueryComponent(med)}'),
+          ),
       ],
     );
   }
