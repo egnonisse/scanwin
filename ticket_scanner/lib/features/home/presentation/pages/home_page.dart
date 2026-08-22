@@ -12,6 +12,7 @@ import '../../domain/entities/points_event.dart';
 import '../../../../features/pharmacy/domain/entities/pharmacy.dart';
 import '../../../../features/pharmacy/data/repositories/firebase_pharmacy_repository.dart';
 import '../../../campaign/presentation/widgets/campaign_carousel.dart';
+import '../../../announcement/presentation/widgets/announcement_popup_host.dart';
 import '../cubit/home_cubit.dart';
 import '../cubit/home_state.dart';
 import '../../../settings/presentation/cubit/settings_cubit.dart';
@@ -75,6 +76,8 @@ class HomePage extends StatelessWidget {
                 return ListView(
                   padding: const EdgeInsets.all(16),
                   children: [
+                    // Invisible : affiche la popup d'annonce (dashboard) si active.
+                    const AnnouncementPopupHost(),
                     _SearchBar(onTap: () => context.push('/search')),
                     const SizedBox(height: 14),
                     const CampaignCarousel(),

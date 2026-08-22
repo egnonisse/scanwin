@@ -6,6 +6,7 @@ import 'analytics_page.dart';
 import 'campaigns_page.dart';
 import 'guardes_page.dart';
 import 'medicaments_page.dart';
+import 'notifications_page.dart';
 import 'pharmacies_page.dart';
 import 'receipts_page.dart';
 import 'users_page.dart';
@@ -38,6 +39,7 @@ class _DashboardPageState extends State<DashboardPage> {
       const UsersPage(),
       const AnalyticsPage(),
       const CampaignsPage(),
+      const NotificationsPage(),
       const ReceiptsPage(),
     ];
 
@@ -94,6 +96,11 @@ class _DashboardPageState extends State<DashboardPage> {
                 icon: Icon(Icons.campaign_outlined),
                 selectedIcon: Icon(Icons.campaign),
                 label: Text('Campagnes'),
+              ),
+              NavigationRailDestination(
+                icon: Icon(Icons.notifications_outlined),
+                selectedIcon: Icon(Icons.notifications),
+                label: Text('Notifications'),
               ),
               NavigationRailDestination(
                 icon: Icon(Icons.receipt_long_outlined),
