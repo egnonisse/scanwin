@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -35,6 +37,9 @@ class _SearchPageState extends State<SearchPage> {
   late final TextEditingController _controller;
   int _tabIndex = 0;
 
+  /// Debounce de la recherche réactive (350 ms après la dernière frappe).
+  Timer? _debounceTimer;
+
   @override
   void initState() {
     super.initState();
@@ -43,8 +48,17 @@ class _SearchPageState extends State<SearchPage> {
 
   @override
   void dispose() {
+    _debounceTimer?.cancel();
     _controller.dispose();
     super.dispose();
+  }
+
+  /// Lance la recherche avec debounce (recherche réactive pendant la frappe).
+  void _scheduleSearch(SearchCubit cubit, String query) {
+    _debounceTimer?.cancel();
+    _debounceTimer = Timer(const Duration(milliseconds: 350), () {
+      cubit.search(query);
+    });
   }
 
   @override
@@ -102,7 +116,13 @@ class _SearchPageState extends State<SearchPage> {
                 controller: _controller,
                 autofocus: true,
                 textInputAction: TextInputAction.search,
+                onChanged: (value) {
+                  // Recherche réactive : lance la recherche pendant la frappe
+                  // (debounce 350 ms côté State).
+                  _scheduleSearch(searchContext.read<SearchCubit>(), value);
+                },
                 onSubmitted: (value) {
+                  _debounceTimer?.cancel();
                   AppAnalytics().logSearch(query: value);
                   searchContext.read<SearchCubit>().search(value);
                 },
