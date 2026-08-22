@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -18,6 +20,33 @@ class SettingsCubit extends Cubit<SettingsState> {
   static const _currencyKey = 'currency_code';
   static const _allowedCurrencies = {'EUR', 'USD', 'GBP', 'CHF', 'XOF'};
 
+  /// Pays de la zone XOF (UEMOA) — codes pays ISO des locales système.
+  static const _xofCountries = {
+    'CI', // Côte d'Ivoire
+    'BJ', // Bénin
+    'BF', // Burkina Faso
+    'ML', // Mali
+    'NE', // Niger
+    'SN', // Sénégal
+    'TG', // Togo
+    'GW', // Guinée-Bissau
+  };
+
+  /// Détecte la devise selon la zone de l'utilisateur (locale du téléphone,
+  /// ex : fr_CI → XOF). Aucune permission ni réseau requis.
+  static String? detectRegionalCurrency() {
+    try {
+      final locale = Platform.localeName.toUpperCase();
+      final parts = locale.split('_');
+      if (parts.length == 2 && _xofCountries.contains(parts[1])) {
+        return 'XOF';
+      }
+    } catch (_) {
+      // Locale illisible : pas de détection.
+    }
+    return null;
+  }
+
   Future<void> load() async {
     emit(state.copyWith(isLoading: true, errorMessage: null));
     try {
@@ -27,7 +56,19 @@ class SettingsCubit extends Cubit<SettingsState> {
         emit(state.copyWith(currencyCode: stored, isLoading: false));
         return;
       }
-      emit(state.copyWith(isLoading: false));
+
+      // Pas de devise enregistrée : détection automatique de la zone.
+      // (Le choix manuel reste prioritaire une fois enregistré.)
+      final detected = detectRegionalCurrency();
+      if (detected != null) {
+        await prefs.setString(_currencyKey, detected);
+      }
+      emit(
+        state.copyWith(
+          currencyCode: detected ?? 'EUR',
+          isLoading: false,
+        ),
+      );
     } catch (e) {
       emit(
         state.copyWith(
