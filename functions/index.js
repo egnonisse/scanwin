@@ -7,6 +7,8 @@ const { logger } = require('firebase-functions/logger');
 const admin = require('firebase-admin');
 const { getFirestore, FieldValue, Timestamp } = require('firebase-admin/firestore');
 const { getStorage } = require('firebase-admin/storage');
+// v14 : messaging n'est PAS un namespace de admin (undefined sinon).
+const { getMessaging } = require('firebase-admin/messaging');
 
 admin.initializeApp();
 
@@ -309,7 +311,7 @@ exports.sendPushOnRequest = onDocumentCreated('pushRequests/{requestId}', async 
     let failed = 0;
     for (let i = 0; i < tokens.length; i += 500) {
       const batch = tokens.slice(i, i + 500);
-      const result = await admin.messaging().sendEachForMulticast({
+      const result = await getMessaging().sendEachForMulticast({
         tokens: batch,
         ...payload,
       });
