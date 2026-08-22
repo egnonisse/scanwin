@@ -34,16 +34,39 @@ class _ImagePickerFieldState extends State<ImagePickerField> {
 
   Future<void> _pick() async {
     setState(() => _uploading = true);
-    final result = await _uploadService.pickAndUpload(
-      prefix: widget.prefix,
-      existingUrl: _url,
-    );
-    if (!mounted) return;
-    setState(() {
-      _url = result;
-      _uploading = false;
-    });
-    widget.onChanged?.call(result);
+    try {
+      final result = await _uploadService.pickAndUpload(
+        prefix: widget.prefix,
+        existingUrl: _url,
+      );
+      if (!mounted) return;
+      if (result == null) {
+        // Échec silencieux de l'upload : informer l'utilisateur.
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Upload de l\'image impossible. Vérifie ta connexion et '
+              'réessaie (Ctrl+F5 si le problème persiste).',
+            ),
+          ),
+        );
+      } else if (result != _url) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Image téléversée ✅')),
+        );
+      }
+      setState(() {
+        _url = result;
+        _uploading = false;
+      });
+      widget.onChanged?.call(result);
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _uploading = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Erreur upload : $e')),
+      );
+    }
   }
 
   Future<void> _remove() async {

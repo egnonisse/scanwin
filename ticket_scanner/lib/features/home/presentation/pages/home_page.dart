@@ -75,7 +75,9 @@ class HomePage extends StatelessWidget {
             return BlocBuilder<HomeCubit, HomeState>(
               builder: (context, home) {
                 return ListView(
-                  padding: const EdgeInsets.all(16),
+                  // Marge basse généreuse : le dernier bloc (historique)
+                  // reste pleinement visible au-dessus de la barre système.
+                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 96),
                   children: [
                     // Avertissement médical (1er lancement) puis popup
                     // d'annonce (dashboard) — widgets invisibles.
@@ -385,8 +387,17 @@ class _PopularMedsSection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Médicaments populaires',
-            style: Theme.of(context).textTheme.titleMedium),
+        Row(
+          children: [
+            Text('Médicaments populaires',
+                style: Theme.of(context).textTheme.titleMedium),
+            const Spacer(),
+            TextButton(
+              onPressed: () => context.push('/search'),
+              child: const Text('Voir tout'),
+            ),
+          ],
+        ),
         const SizedBox(height: 8),
         Wrap(
           spacing: 8,
