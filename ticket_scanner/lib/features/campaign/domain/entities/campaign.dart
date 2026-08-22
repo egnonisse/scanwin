@@ -6,6 +6,7 @@ class Campaign {
     this.url,
     this.backgroundColorHex,
     this.imageUrl,
+    this.sortOrder = 0,
     this.active = true,
   });
 
@@ -18,6 +19,9 @@ class Campaign {
 
   /// Couleur de fond au format '#RRGGBB' (défaut : vert PharmaScan).
   final String? backgroundColorHex;
+
+  /// Ordre d'affichage (défini dans le dashboard).
+  final int sortOrder;
 
   /// Toujours true côté app : le repository filtre déjà les inactives.
   final bool active;

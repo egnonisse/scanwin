@@ -13,15 +13,29 @@ class FirebaseCampaignRepository {
     return FirebaseFirestore.instance
         .collection('campaigns')
         .where('active', isEqualTo: true)
-        .orderBy('sortOrder')
+        // PAS de orderBy ici : where+orderBy sur 2 champs exigerait un
+        // index composite (erreur 400 « query requires an index » → le
+        // carrousel disparaissait). Tri côté client (2-5 bannières).
         .snapshots()
         .map((snapshot) {
       final now = DateTime.now();
       final campaigns = <Campaign>[];
       for (final doc in snapshot.docs) {
         final data = doc.data();
-        final startDate = (data['startDate'] as Timestamp?)?.toDate();
-        final endDate = (data['endDate'] as Timestamp?)?.toDate();
+        // Tolérant aux 2 formats : Timestamp (nouveau dashboard) ou
+        // string ISO (anciennes données — causait un cast crash → le
+        // carrousel disparaissait silencieusement).
+        DateTime? parseDate(Object? value) {
+          if (value is Timestamp) return value.toDate();
+          if (value is String) {
+            final parsed = DateTime.tryParse(value);
+            return parsed?.toLocal();
+          }
+          return null;
+        }
+
+        final startDate = parseDate(data['startDate']);
+        final endDate = parseDate(data['endDate']);
         // Fenêtre de dates : hors fenêtre = masquée.
         if (startDate != null && now.isBefore(startDate)) continue;
         if (endDate != null && now.isAfter(endDate)) continue;
@@ -31,9 +45,14 @@ class FirebaseCampaignRepository {
           url: data['url']?.toString(),
           backgroundColorHex: data['backgroundColor']?.toString(),
           imageUrl: data['imageUrl']?.toString(),
+          sortOrder: (data['sortOrder'] as num?)?.toInt() ?? 0,
         ));
       }
-      return campaigns.where((c) => c.title.isNotEmpty).toList();
+      final result = campaigns.where((c) => c.title.isNotEmpty).toList()
+        // Tri côté client (pas d'orderBy Firestore : évite l'index
+        // composite requis).
+        ..sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
+      return result;
     });
   }
 }

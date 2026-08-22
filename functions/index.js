@@ -410,6 +410,12 @@ exports.parseReceiptWithAI = onCall(
 
     const url = cfg.baseUrl || DEFAULT_AI_URLS[cfg.provider] || DEFAULT_AI_URLS.deepseek;
 
+    // Garde : deepseek-reasoner répond VIDE pour l'extraction JSON (le
+    // raisonnement consomme tout le budget) et ignore json_object. On force
+    // le modèle chat pour ce cas d'usage.
+    let model = cfg.model;
+    if (model.includes('reasoner')) model = 'deepseek-chat';
+
     const response = await fetch(url, {
       method: 'POST',
       headers: {
@@ -417,7 +423,7 @@ exports.parseReceiptWithAI = onCall(
         Authorization: `Bearer ${cfg.apiKey}`,
       },
       body: JSON.stringify({
-        model: cfg.model,
+        model: model,
         messages: [
           { role: 'system', content: PARSE_SYSTEM_PROMPT },
           { role: 'user', content: rawText.trim().slice(0, 6000) },
