@@ -63,48 +63,39 @@ class _DashboardPageState extends State<DashboardPage> {
             labelType: NavigationRailLabelType.all,
             destinations: const [
               NavigationRailDestination(
-                icon: Icon(Icons.dashboard_outlined),
-                selectedIcon: Icon(Icons.dashboard),
+                icon: Icon(Icons.dashboard),
                 label: Text('Stats'),
               ),
               NavigationRailDestination(
-                icon: Icon(Icons.local_pharmacy_outlined),
-                selectedIcon: Icon(Icons.local_pharmacy),
+                icon: Icon(Icons.local_pharmacy),
                 label: Text('Pharmacies'),
               ),
               NavigationRailDestination(
-                icon: Icon(Icons.local_hospital_outlined),
-                selectedIcon: Icon(Icons.local_hospital),
+                icon: Icon(Icons.local_hospital),
                 label: Text('Gardes'),
               ),
               NavigationRailDestination(
-                icon: Icon(Icons.medication_outlined),
-                selectedIcon: Icon(Icons.medication),
+                icon: Icon(Icons.medication),
                 label: Text('Prix'),
               ),
               NavigationRailDestination(
-                icon: Icon(Icons.people_outline),
-                selectedIcon: Icon(Icons.people),
+                icon: Icon(Icons.people),
                 label: Text('Utilisateurs'),
               ),
               NavigationRailDestination(
-                icon: Icon(Icons.insights_outlined),
-                selectedIcon: Icon(Icons.insights),
+                icon: Icon(Icons.insights),
                 label: Text('Analytics'),
               ),
               NavigationRailDestination(
-                icon: Icon(Icons.campaign_outlined),
-                selectedIcon: Icon(Icons.campaign),
+                icon: Icon(Icons.campaign),
                 label: Text('Campagnes'),
               ),
               NavigationRailDestination(
-                icon: Icon(Icons.notifications_outlined),
-                selectedIcon: Icon(Icons.notifications),
+                icon: Icon(Icons.notifications),
                 label: Text('Notifications'),
               ),
               NavigationRailDestination(
-                icon: Icon(Icons.receipt_long_outlined),
-                selectedIcon: Icon(Icons.receipt_long),
+                icon: Icon(Icons.receipt_long),
                 label: Text('Reçus'),
               ),
             ],

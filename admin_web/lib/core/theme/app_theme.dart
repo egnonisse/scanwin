@@ -1,154 +1,222 @@
 import 'package:flutter/material.dart';
 
-/// Design system PharmaScan — identique à l'app mobile.
+/// Design system PharmaScan.
 ///
-/// Validé par LEO : primaire #0E7A5F, secondaire #19B28A, fond #F8FAF9,
-/// titres Poppins, corps Inter, arrondis 5px, ombres douces.
-class AppColors {
-  AppColors._();
+/// Validé par LEO le 20/08/2026 :
+/// - Titres : Poppins (AppBar, titres de sections, noms, valeurs)
+/// - Corps : Inter (descriptions, dates, sous-titres)
+/// - Primaire : vert pharmacie #0E7A5F
+/// - Secondaire : vert clair #19B28A (dégradés)
+/// - Fond : blanc cassé #F8FAF9
+/// - Niveaux : Bronze #9C6B30 · Argent #8E9AAF · Or #D4AF37
+/// - Icônes : Material (Symbols Rounded dans les maquettes)
+/// - Arrondis : 5px (cartes, boutons, champs) — AppBar carrée
+/// - Ombres : douces (0 1px 3px)
+/// - Slogan : « Comparez. Payez juste. »
+abstract final class AppColors {
+  static const Color primary = Color(0xFF0E7A5F);
+  static const Color secondary = Color(0xFF19B28A);
+  static const Color background = Color(0xFFF8FAF9);
+  static const Color surface = Colors.white;
+  static const Color onPrimary = Colors.white;
+  static const Color textPrimary = Color(0xFF1A2E28);
+  static const Color textSecondary = Color(0xFF6B7D75);
+  static const Color textMuted = Color(0xFF8A9A93);
+  static const Color divider = Color(0xFFF0F4F2);
+  static const Color chipBg = Color(0xFFE8EFE9);
+  static const Color iconBg = Color(0xFFE6F4EF);
 
-  static const primary = Color(0xFF0E7A5F);
-  static const secondary = Color(0xFF19B28A);
-  static const surface = Color(0xFFF8FAF9);
-  static const textPrimary = Color(0xFF1F2937);
-  static const onPrimary = Colors.white;
+  // Niveaux contributeur.
+  static const Color bronze = Color(0xFF9C6B30);
+  static const Color silver = Color(0xFF8E9AAF);
+  static const Color gold = Color(0xFFD4AF37);
 
-  // Dégradé AppBar (comme l'app).
-  static const appBarStart = Color(0xFF0E7A5F);
-  static const appBarEnd = Color(0xFF19B28A);
+  // AppBar.
+  static const Color appBarStart = Color(0xFF0E7A5F);
+  static const Color appBarEnd = Color(0xFF0A5C48);
+
+  // Scanner (fond sombre pour lisibilité caméra).
+  static const Color scanBg = Color(0xFF1A2E28);
+  static const Color scanFrame = Color(0xFF7EE0C8);
+
+  static const Color error = Color(0xFFB3261E);
 }
 
-class AppRadii {
-  AppRadii._();
-
-  static const card = 5.0;
-  static const button = 5.0;
-  static const input = 5.0;
-  static const icon = 5.0;
+/// Formes : 5px partout, AppBar carrée (0).
+abstract final class AppRadii {
+  static const double card = 5;
+  static const double button = 5;
+  static const double field = 5;
+  static const double chip = 5;
+  static const double icon = 5;
+  static const double appBar = 0;
 }
 
-class AppShadows {
-  AppShadows._();
-
-  static const card = [
+/// Ombres douces (équivalent 0 1px 3px).
+abstract final class AppShadows {
+  static const List<BoxShadow> card = [
     BoxShadow(
-      color: Color(0x14000000),
+      color: Color(0x0A104834), // rgba(16,72,52,.04)
+      blurRadius: 3,
+      offset: Offset(0, 1),
+    ),
+  ];
+
+  static const List<BoxShadow> searchBar = [
+    BoxShadow(
+      color: Color(0x0D000000), // rgba(0,0,0,.05)
       blurRadius: 3,
       offset: Offset(0, 1),
     ),
   ];
 }
 
+/// Thème Material 3 complet de l'application.
 ThemeData buildAppTheme() {
   final base = ThemeData(
     useMaterial3: true,
-    scaffoldBackgroundColor: AppColors.surface,
     colorScheme: ColorScheme.fromSeed(
       seedColor: AppColors.primary,
       primary: AppColors.primary,
       secondary: AppColors.secondary,
       surface: AppColors.surface,
-      onSurface: AppColors.textPrimary,
+      error: AppColors.error,
     ),
   );
 
   final textTheme = base.textTheme
       .apply(bodyColor: AppColors.textPrimary, displayColor: AppColors.textPrimary)
       .copyWith(
-        headlineSmall: const TextStyle(
-          fontFamily: 'Poppins',
+        // Titres : Poppins.
+        headlineSmall: TextStyle(fontFamily: 'Poppins', 
           fontSize: 22,
           fontWeight: FontWeight.w600,
           color: AppColors.textPrimary,
         ),
-        titleLarge: const TextStyle(
-          fontFamily: 'Poppins',
+        titleLarge: TextStyle(fontFamily: 'Poppins', 
           fontSize: 17,
           fontWeight: FontWeight.w600,
           color: AppColors.textPrimary,
         ),
-        titleMedium: const TextStyle(
-          fontFamily: 'Poppins',
+        titleMedium: TextStyle(fontFamily: 'Poppins', 
           fontSize: 14,
           fontWeight: FontWeight.w600,
           color: AppColors.textPrimary,
         ),
-        titleSmall: const TextStyle(
-          fontFamily: 'Poppins',
+        titleSmall: TextStyle(fontFamily: 'Poppins', 
           fontSize: 12,
           fontWeight: FontWeight.w500,
           color: AppColors.textPrimary,
         ),
-        bodyLarge: const TextStyle(
-          fontFamily: 'Inter',
+        // Corps : Inter.
+        bodyLarge: TextStyle(fontFamily: 'Inter', 
           fontSize: 14,
           fontWeight: FontWeight.w400,
           color: AppColors.textPrimary,
         ),
-        bodyMedium: const TextStyle(
-          fontFamily: 'Inter',
+        bodyMedium: TextStyle(fontFamily: 'Inter', 
           fontSize: 13,
           fontWeight: FontWeight.w400,
           color: AppColors.textPrimary,
         ),
-        bodySmall: const TextStyle(
-          fontFamily: 'Inter',
+        bodySmall: TextStyle(fontFamily: 'Inter', 
           fontSize: 11,
           fontWeight: FontWeight.w400,
-          color: AppColors.textPrimary,
+          color: AppColors.textSecondary,
         ),
-        labelLarge: const TextStyle(
-          fontFamily: 'Inter',
+        labelLarge: TextStyle(fontFamily: 'Poppins', 
           fontSize: 14,
-          fontWeight: FontWeight.w500,
+          fontWeight: FontWeight.w600,
+          color: AppColors.onPrimary,
+        ),
+        labelMedium: TextStyle(fontFamily: 'Poppins', 
+          fontSize: 12,
+          fontWeight: FontWeight.w600,
+          color: AppColors.textPrimary,
         ),
       );
 
   return base.copyWith(
+    scaffoldBackgroundColor: AppColors.background,
     textTheme: textTheme,
     appBarTheme: AppBarTheme(
-      backgroundColor: AppColors.appBarStart,
+      backgroundColor: AppColors.primary,
       foregroundColor: AppColors.onPrimary,
       elevation: 0,
-      titleTextStyle: textTheme.titleLarge?.copyWith(color: AppColors.onPrimary),
-      shape: const RoundedRectangleBorder(), // carrée, comme l'app
+      titleTextStyle: TextStyle(fontFamily: 'Poppins', 
+        fontSize: 17,
+        fontWeight: FontWeight.w600,
+        color: AppColors.onPrimary,
+      ),
+      centerTitle: false,
     ),
     cardTheme: CardThemeData(
-      elevation: 1,
-      shadowColor: const Color(0x14000000),
+      color: AppColors.surface,
+      elevation: 0,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(AppRadii.card),
       ),
     ),
+    inputDecorationTheme: InputDecorationTheme(
+      filled: true,
+      fillColor: AppColors.surface,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(AppRadii.field),
+        borderSide: BorderSide.none,
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(AppRadii.field),
+        borderSide: BorderSide.none,
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(AppRadii.field),
+        borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
+      ),
+      hintStyle: TextStyle(fontFamily: 'Inter', 
+        fontSize: 14,
+        color: AppColors.textMuted,
+      ),
+    ),
     filledButtonTheme: FilledButtonThemeData(
       style: FilledButton.styleFrom(
+        backgroundColor: AppColors.primary,
+        foregroundColor: AppColors.onPrimary,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(AppRadii.button),
         ),
+        textStyle: TextStyle(fontFamily: 'Poppins', 
+          fontSize: 13,
+          fontWeight: FontWeight.w600,
+        ),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       ),
     ),
     outlinedButtonTheme: OutlinedButtonThemeData(
       style: OutlinedButton.styleFrom(
+        foregroundColor: AppColors.primary,
+        side: const BorderSide(color: Color(0xFFCFE0D8)),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(AppRadii.button),
         ),
+        textStyle: TextStyle(fontFamily: 'Poppins', 
+          fontSize: 13,
+          fontWeight: FontWeight.w500,
+        ),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 11),
       ),
     ),
-    inputDecorationTheme: InputDecorationTheme(
-      filled: true,
-      fillColor: Colors.white,
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(AppRadii.input),
-        borderSide: BorderSide.none,
+    chipTheme: base.chipTheme.copyWith(
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppRadii.chip),
       ),
-      enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(AppRadii.input),
-        borderSide: BorderSide.none,
-      ),
-      focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(AppRadii.input),
-        borderSide: const BorderSide(color: AppColors.secondary, width: 1.5),
-      ),
+    ),
+    dividerTheme: const DividerThemeData(
+      color: AppColors.divider,
+      thickness: 1,
+    ),
+    progressIndicatorTheme: const ProgressIndicatorThemeData(
+      color: AppColors.primary,
     ),
   );
 }
