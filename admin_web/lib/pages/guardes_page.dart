@@ -286,7 +286,8 @@ class _GardeTile extends StatelessWidget {
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
       child: ListTile(
-        leading: const Icon(Icons.local_pharmacy, color: Colors.teal),
+        leading: Icon(Icons.local_pharmacy,
+            color: Theme.of(context).colorScheme.primary),
         title: Text(pharmacy.name),
         subtitle: Text(
           [
