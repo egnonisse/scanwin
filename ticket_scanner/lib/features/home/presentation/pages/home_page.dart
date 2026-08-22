@@ -75,11 +75,17 @@ class HomePage extends StatelessWidget {
           builder: (context, settings) {
             return BlocBuilder<HomeCubit, HomeState>(
               builder: (context, home) {
-                return ListView(
-                  // Marge basse généreuse : le dernier bloc (historique)
-                  // reste pleinement visible au-dessus de la barre système.
-                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 96),
-                  children: [
+                // Pull-to-refresh : relance le profil + l'historique, et les
+                // StreamBuilders (campagnes, gardes, médicaments récents) se
+                // resynchronisent via Firestore temps réel.
+                return RefreshIndicator(
+                  onRefresh: () => context.read<HomeCubit>().refresh(),
+                  child: ListView(
+                    // Marge basse généreuse : le dernier bloc (historique)
+                    // reste pleinement visible au-dessus de la barre système.
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    padding: const EdgeInsets.fromLTRB(16, 16, 16, 96),
+                    children: [
                     // Avertissement médical (1er lancement) puis popup
                     // d'annonce (dashboard) — widgets invisibles.
                     const MedicalWarningHost(),
@@ -113,7 +119,8 @@ class HomePage extends StatelessWidget {
                           currencyCode: settings.currencyCode,
                         ),
                       ),
-                  ],
+                    ],
+                  ),
                 );
               },
             );

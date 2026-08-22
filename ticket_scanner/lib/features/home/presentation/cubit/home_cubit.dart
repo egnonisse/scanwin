@@ -55,6 +55,12 @@ class HomeCubit extends Cubit<HomeState> {
     );
   }
 
+  /// Relance les abonnements profil + historique (pull-to-refresh).
+  /// Les StreamBuilders de la home se resynchronisent via Firestore.
+  Future<void> refresh() async {
+    start();
+  }
+
   @override
   Future<void> close() async {
     await _profileSub?.cancel();
