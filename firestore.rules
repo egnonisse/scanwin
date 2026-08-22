@@ -36,6 +36,14 @@ service cloud.firestore {
 
     // Profil utilisateur : le client ne peut créer que son propre profil
     // avec points == 0, et ne peut modifier QUE currencyCode.
+    // Configuration des points (montant par scan) : lue par tous (l'app
+    // peut l'afficher), écrite par l'admin. La Cloud Function la lit via
+    // l'Admin SDK.
+    match /pointsConfig/{docId} {
+      allow read: if request.auth != null;
+      allow write: if isAdmin();
+    }
+
     // points / createdAt / pointsEvents sont gérés par la Cloud Function.
     // L'admin peut lire et corriger les profils (support utilisateurs).
     match /users/{userId} {
@@ -102,11 +110,13 @@ service cloud.firestore {
       allow create, update, delete: if isAdmin();
     }
 
-    // Historique des points : lecture par le propriétaire uniquement,
-    // écriture par la Cloud Function uniquement.
+    // Historique des points : lecture par le propriétaire (app) et par
+    // l'admin (dashboard), écriture par la Cloud Function et l'admin
+    // (ajustements manuels avec motif).
     match /users/{userId}/pointsEvents/{eventId} {
-      allow read: if request.auth != null && request.auth.uid == userId;
-      allow write: if false;
+      allow read: if request.auth != null
+          && (request.auth.uid == userId || isAdmin());
+      allow create, update, delete: if isAdmin();
     }
   }
 }

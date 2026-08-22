@@ -14,7 +14,21 @@ admin.initializeApp();
 
 const db = getFirestore();
 
-const POINTS_PER_RECEIPT = 10;
+const DEFAULT_POINTS_PER_RECEIPT = 10;
+
+/** Lit la config des points (pointsConfig/default) — fallback 10. */
+async function loadPointsConfig() {
+  try {
+    const doc = await db.collection('pointsConfig').doc('default').get();
+    if (doc.exists) {
+      const value = Number(doc.data().pointsPerReceipt);
+      if (Number.isFinite(value) && value > 0) return Math.round(value);
+    }
+  } catch (e) {
+    logger.error('loadPointsConfig failed', e);
+  }
+  return DEFAULT_POINTS_PER_RECEIPT;
+}
 
 /** Normalise un nom (médicament, pharmacie) : minuscules, sans accents. */
 function normalizeName(value) {
@@ -222,21 +236,22 @@ exports.submitReceipt = onCall(async (request) => {
       });
 
       const userRef = db.collection('users').doc(userId);
+      const pointsAwarded = await loadPointsConfig();
       transaction.update(userRef, {
-        points: FieldValue.increment(POINTS_PER_RECEIPT),
+        points: FieldValue.increment(pointsAwarded),
         // Compteur de contribution (reçus validés) — alimente le statut
         // contributeur (Bronze/Argent/Or) affiché dans la home.
         contributions: FieldValue.increment(1),
       });
 
       transaction.set(userRef.collection('pointsEvents').doc(), {
-        pointsAdded: POINTS_PER_RECEIPT,
+        pointsAdded: pointsAwarded,
         receiptId,
         montant,
         createdAt: FieldValue.serverTimestamp(),
       });
 
-      return { success: true, pointsAdded: POINTS_PER_RECEIPT, receiptId };
+      return { success: true, pointsAdded: pointsAwarded, receiptId };
     });
   } catch (error) {
     if (error instanceof HttpsError) {

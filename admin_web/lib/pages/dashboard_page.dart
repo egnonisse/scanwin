@@ -10,6 +10,7 @@ import 'legal_pages_page.dart';
 import 'medicaments_page.dart';
 import 'notifications_page.dart';
 import 'pharmacies_page.dart';
+import 'points_page.dart';
 import 'receipts_page.dart';
 import 'users_page.dart';
 
@@ -39,6 +40,7 @@ class _DashboardPageState extends State<DashboardPage> {
       const GuardesPage(),
       const MedicamentsPage(),
       const UsersPage(),
+      const PointsPage(),
       const AnalyticsPage(),
       const AiSettingsPage(),
       const CampaignsPage(),
@@ -85,6 +87,10 @@ class _DashboardPageState extends State<DashboardPage> {
               NavigationRailDestination(
                 icon: Icon(Icons.people),
                 label: Text('Utilisateurs'),
+              ),
+              NavigationRailDestination(
+                icon: Icon(Icons.stars),
+                label: Text('Points'),
               ),
               NavigationRailDestination(
                 icon: Icon(Icons.insights),
