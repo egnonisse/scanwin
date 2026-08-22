@@ -75,6 +75,10 @@ flutter:
   # the material Icons class.
   uses-material-design: true
 
+  # Logo officiel PharmaScan.
+  assets:
+    - assets/images/logo.png
+
   # Polices embarquées (pas de téléchargement réseau au runtime).
   fonts:
     - family: Poppins

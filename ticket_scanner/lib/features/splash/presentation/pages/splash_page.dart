@@ -54,22 +54,31 @@ class SplashPage extends StatelessWidget {
                     return Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Container(
-                          width: 72,
-                          height: 72,
-                          decoration: BoxDecoration(
-                            gradient: const LinearGradient(
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                              colors: [AppColors.appBarStart, AppColors.appBarEnd],
+                        Image.asset(
+                          'assets/images/logo.png',
+                          width: 96,
+                          height: 96,
+                          fit: BoxFit.contain,
+                          errorBuilder: (_, _, _) => Container(
+                            width: 72,
+                            height: 72,
+                            decoration: BoxDecoration(
+                              gradient: const LinearGradient(
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                                colors: [
+                                  AppColors.appBarStart,
+                                  AppColors.appBarEnd
+                                ],
+                              ),
+                              borderRadius:
+                                  BorderRadius.circular(AppRadii.icon),
                             ),
-                            borderRadius: BorderRadius.circular(AppRadii.icon),
-                            boxShadow: AppShadows.card,
-                          ),
-                          child: const Icon(
-                            Icons.local_pharmacy,
-                            color: AppColors.onPrimary,
-                            size: 36,
+                            child: const Icon(
+                              Icons.local_pharmacy,
+                              color: AppColors.onPrimary,
+                              size: 36,
+                            ),
                           ),
                         ),
                         const SizedBox(height: 16),
