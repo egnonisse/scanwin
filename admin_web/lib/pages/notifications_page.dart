@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter/material.dart';
 
 import '../widgets/image_picker_field.dart';
@@ -50,6 +51,12 @@ class _NotificationsPageState extends State<NotificationsPage> {
                 Text('Notifications (${docs.length})',
                     style: Theme.of(context).textTheme.titleLarge),
                 const Spacer(),
+                OutlinedButton.icon(
+                  onPressed: () => _showSendPushDialog(context),
+                  icon: const Icon(Icons.send),
+                  label: const Text('Envoyer un push'),
+                ),
+                const SizedBox(width: 8),
                 FilledButton.icon(
                   onPressed: () => _showEditDialog(context),
                   icon: const Icon(Icons.add),
@@ -60,7 +67,9 @@ class _NotificationsPageState extends State<NotificationsPage> {
             const SizedBox(height: 8),
             Text(
               'Les notifications actives s\'affichent en popup dans l\'app '
-              'au lancement (promo, rappel de prise de médicaments, info).',
+              'au lancement (promo, rappel de prise de médicaments, info). '
+              '« Envoyer un push » = notification système immédiate, même '
+              'app fermée.',
               style: Theme.of(context).textTheme.bodySmall,
             ),
             const SizedBox(height: 12),
@@ -82,6 +91,109 @@ class _NotificationsPageState extends State<NotificationsPage> {
         );
       },
     );
+  }
+
+  /// Envoi d'un push FCM immédiat à tous les utilisateurs enregistrés.
+  Future<void> _showSendPushDialog(BuildContext context) async {
+    final formKey = GlobalKey<FormState>();
+    final titleController = TextEditingController();
+    final bodyController = TextEditingController();
+    var sending = false;
+
+    final result = await showDialog<Map<String, String>>(
+      context: context,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (dialogContext, setDialogState) => AlertDialog(
+          title: const Text('Envoyer une notification push'),
+          content: SizedBox(
+            width: 420,
+            child: Form(
+              key: formKey,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextFormField(
+                    controller: titleController,
+                    decoration: const InputDecoration(
+                        labelText: 'Titre *', border: OutlineInputBorder()),
+                    validator: (v) =>
+                        (v == null || v.trim().isEmpty) ? 'Requis' : null,
+                  ),
+                  const SizedBox(height: 12),
+                  TextFormField(
+                    controller: bodyController,
+                    maxLines: 3,
+                    decoration: const InputDecoration(
+                        labelText: 'Message *', border: OutlineInputBorder()),
+                    validator: (v) =>
+                        (v == null || v.trim().isEmpty) ? 'Requis' : null,
+                  ),
+                  const SizedBox(height: 8),
+                  const Text(
+                    'Envoyée immédiatement à tous les appareils (app ouverte '
+                    'ou fermée).',
+                    style: TextStyle(fontSize: 12),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(),
+              child: const Text('Annuler'),
+            ),
+            FilledButton.icon(
+              onPressed: sending
+                  ? null
+                  : () async {
+                      if (!formKey.currentState!.validate()) return;
+                      setDialogState(() => sending = true);
+                      try {
+                        final callable = FirebaseFunctions.instance
+                            .httpsCallable('sendPush');
+                        final response = await callable.call({
+                          'title': titleController.text.trim(),
+                          'body': bodyController.text.trim(),
+                        });
+                        final data = response.data as Map;
+                        if (!dialogContext.mounted) return;
+                        Navigator.of(dialogContext).pop({
+                          'sent': '${data['sent'] ?? 0}',
+                          'failed': '${data['failed'] ?? 0}',
+                        });
+                      } catch (e) {
+                        if (!dialogContext.mounted) return;
+                        Navigator.of(dialogContext).pop({'error': '$e'});
+                      }
+                    },
+              icon: sending
+                  ? const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Icon(Icons.send, size: 18),
+              label: Text(sending ? 'Envoi…' : 'Envoyer'),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    if (result == null || !mounted || !context.mounted) return;
+    if (result.containsKey('error')) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Échec : ${result['error']}')),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+              'Push envoyé : ${result['sent']} succès, ${result['failed']} échecs'),
+        ),
+      );
+    }
   }
 
   Future<void> _showEditDialog(BuildContext context,

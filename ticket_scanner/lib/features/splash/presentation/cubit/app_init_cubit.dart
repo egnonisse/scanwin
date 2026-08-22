@@ -1,8 +1,11 @@
+import 'dart:async';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../../core/push/push_notification_service.dart';
 import '../../../../firebase_options.dart';
 import '../../../settings/presentation/cubit/settings_cubit.dart';
 import 'app_init_state.dart';
@@ -57,6 +60,9 @@ class AppInitCubit extends Cubit<AppInitState> {
 
       // La devise cloud a priorité sur la devise locale.
       await _settingsCubit.syncWithCloud();
+
+      // Notifications push : token FCM (non bloquant, silencieux si échec).
+      unawaited(PushNotificationService().init());
 
       emit(state.copyWith(status: AppInitStatus.ready));
     } on FirebaseAuthException catch (e) {

@@ -50,7 +50,7 @@ service cloud.firestore {
 
       allow update: if request.auth != null
           && (request.auth.uid == userId
-              && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['currencyCode'])
+              && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['currencyCode', 'fcmToken'])
               || isAdmin());
 
       allow delete: if false;
