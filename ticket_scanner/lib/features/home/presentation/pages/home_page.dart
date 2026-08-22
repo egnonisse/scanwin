@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../core/money/money_formatter.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../../../notification/presentation/widgets/notification_bell.dart';
 import '../../../pharmacy/presentation/widgets/pharmacy_sheet.dart';
 import '../../data/repositories/firebase_home_repository.dart';
 import '../../domain/entities/contributor_profile.dart';
@@ -64,6 +65,7 @@ class HomePage extends StatelessWidget {
               icon: const Icon(Icons.qr_code_scanner),
               tooltip: 'Scanner un ticket',
             ),
+            const NotificationBell(),
             IconButton(
               onPressed: () => context.push('/settings'),
               icon: const Icon(Icons.settings),

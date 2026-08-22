@@ -95,7 +95,7 @@ class ScannerPage extends StatelessWidget {
                         : () => _requestPermissionAndScan(context),
                     icon: const Icon(Icons.photo_camera),
                     label: Text(
-                      state.isLoading ? 'OCR en cours...' : 'Prendre une photo',
+                      state.isLoading ? 'Traitement en cours…' : 'Prendre une photo',
                     ),
                   ),
                   const SizedBox(height: 8),

@@ -5,6 +5,7 @@ import '../../core/theme/app_theme.dart';
 import '../features/home/presentation/pages/home_page.dart';
 import '../features/legal/presentation/pages/legal_page_view.dart';
 import '../features/legal/presentation/widgets/legal_section.dart';
+import '../features/notification/presentation/pages/notifications_page.dart';
 import '../features/scanner/presentation/pages/confirmation_page.dart';
 import '../features/scanner/presentation/pages/scanner_page.dart';
 import '../features/search/presentation/pages/search_page.dart';
@@ -48,6 +49,10 @@ final _router = GoRouter(
     GoRoute(
       path: '/settings',
       builder: (context, state) => const SettingsPage(),
+    ),
+    GoRoute(
+      path: '/notifications',
+      builder: (context, state) => const NotificationsPage(),
     ),
     GoRoute(
       path: '/legal/:key',

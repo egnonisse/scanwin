@@ -44,6 +44,13 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
+    // État de lecture des notifications (par utilisateur) : l'utilisateur
+    // marque ses propres notifications comme lues.
+    match /users/{userId}/readAnnouncements/{announcementId} {
+      allow read, write: if request.auth != null
+          && request.auth.uid == userId;
+    }
+
     // points / createdAt / pointsEvents sont gérés par la Cloud Function.
     // L'admin peut lire et corriger les profils (support utilisateurs).
     match /users/{userId} {

@@ -111,7 +111,7 @@ class _SearchPageState extends State<SearchPage> {
         builder: (searchContext) => Column(
           children: [
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
               child: TextField(
                 controller: _controller,
                 autofocus: true,
@@ -138,6 +138,7 @@ class _SearchPageState extends State<SearchPage> {
                 ),
               ),
             ),
+            const SizedBox(height: 8),
             Expanded(
               child: BlocBuilder<SettingsCubit, SettingsState>(
                 builder: (context, settings) {
