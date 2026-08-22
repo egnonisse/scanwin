@@ -14,6 +14,9 @@ Future<void> showPharmacySheet(
   return showModalBottomSheet<void>(
     context: context,
     showDragHandle: true,
+    // Respecte la barre de navigation Android (insets du bas).
+    useSafeArea: true,
+    isScrollControlled: true,
     builder: (sheetContext) => _PharmacySheet(
       pharmacy: pharmacy,
       distanceKm: distanceKm,
@@ -34,7 +37,8 @@ class _PharmacySheet extends StatelessWidget {
   final bool isOnDuty;
 
   Future<void> _call(BuildContext context, String phone) async {
-    final uri = Uri(scheme: 'tel', path: phone.replaceAll(RegExp(r'[^0-9+]'), ''));
+    final uri =
+        Uri(scheme: 'tel', path: phone.replaceAll(RegExp(r'[^0-9+]'), ''));
     if (await canLaunchUrl(uri)) {
       await launchUrl(uri);
     } else {
@@ -55,67 +59,71 @@ class _PharmacySheet extends StatelessWidget {
         pharmacy.phone2!,
     ];
 
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              const Icon(Icons.local_pharmacy, size: 28),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  pharmacy.name,
-                  style: Theme.of(context).textTheme.titleLarge,
+    return SafeArea(
+      top: false,
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.fromLTRB(24, 0, 24, 16),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Icon(Icons.local_pharmacy, size: 28),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    pharmacy.name,
+                    style: Theme.of(context).textTheme.titleLarge,
+                  ),
                 ),
-              ),
-              if (isOnDuty)
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 2,
+                if (isOnDuty)
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 2,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.primaryContainer,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Text(
+                      'DE GARDE',
+                      style:
+                          TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
+                    ),
                   ),
-                  decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.primaryContainer,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: const Text(
-                    'DE GARDE',
-                    style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
+              ],
+            ),
+            const SizedBox(height: 12),
+            if (pharmacy.commune != null || pharmacy.address != null)
+              Text([
+                if (pharmacy.commune != null) pharmacy.commune!,
+                if (pharmacy.address != null) pharmacy.address!,
+              ].join(' • ')),
+            if (distanceKm != null) ...[
+              const SizedBox(height: 4),
+              Text('À ${_formatDistance(distanceKm!)} de toi'),
+            ],
+            if (phones.isNotEmpty) ...[
+              const SizedBox(height: 12),
+              Text('Téléphone', style: Theme.of(context).textTheme.titleSmall),
+              const SizedBox(height: 4),
+              for (final phone in phones)
+                ListTile(
+                  dense: true,
+                  contentPadding: EdgeInsets.zero,
+                  leading: const Icon(Icons.phone),
+                  title: Text(phone),
+                  trailing: FilledButton.tonalIcon(
+                    onPressed: () => _call(context, phone),
+                    icon: const Icon(Icons.call, size: 18),
+                    label: const Text('Appeler'),
                   ),
                 ),
             ],
-          ),
-          const SizedBox(height: 12),
-          if (pharmacy.commune != null || pharmacy.address != null)
-            Text([
-              if (pharmacy.commune != null) pharmacy.commune!,
-              if (pharmacy.address != null) pharmacy.address!,
-            ].join(' • ')),
-          if (distanceKm != null) ...[
-            const SizedBox(height: 4),
-            Text('À ${_formatDistance(distanceKm!)} de toi'),
           ],
-          if (phones.isNotEmpty) ...[
-            const SizedBox(height: 12),
-            Text('Téléphone', style: Theme.of(context).textTheme.titleSmall),
-            const SizedBox(height: 4),
-            for (final phone in phones)
-              ListTile(
-                dense: true,
-                contentPadding: EdgeInsets.zero,
-                leading: const Icon(Icons.phone),
-                title: Text(phone),
-                trailing: FilledButton.tonalIcon(
-                  onPressed: () => _call(context, phone),
-                  icon: const Icon(Icons.call, size: 18),
-                  label: const Text('Appeler'),
-                ),
-              ),
-          ],
-        ],
+        ),
       ),
     );
   }
