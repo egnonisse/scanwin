@@ -14,29 +14,29 @@ final _router = GoRouter(
     GoRoute(
       path: '/',
       builder: (context, state) => const SplashPage(),
-      routes: [
-        GoRoute(
-          path: 'home',
-          builder: (context, state) => const HomePage(),
-        ),
-        GoRoute(
-          path: 'scanner',
-          builder: (context, state) => const ScannerPage(),
-        ),
-        GoRoute(
-          path: 'search',
-          builder: (context, state) =>
-              SearchPage(initialQuery: state.uri.queryParameters['q'] ?? ''),
-        ),
-        GoRoute(
-          path: 'confirmation',
-          builder: (context, state) => const ConfirmationPage(),
-        ),
-        GoRoute(
-          path: 'settings',
-          builder: (context, state) => const SettingsPage(),
-        ),
-      ],
+    ),
+    // Routes racines (pas de sous-route du splash) : le back depuis la home
+    // quitte l'app au lieu de revenir au splash et relancer l'init Firebase.
+    GoRoute(
+      path: '/home',
+      builder: (context, state) => const HomePage(),
+    ),
+    GoRoute(
+      path: '/scanner',
+      builder: (context, state) => const ScannerPage(),
+    ),
+    GoRoute(
+      path: '/search',
+      builder: (context, state) =>
+          SearchPage(initialQuery: state.uri.queryParameters['q'] ?? ''),
+    ),
+    GoRoute(
+      path: '/confirmation',
+      builder: (context, state) => const ConfirmationPage(),
+    ),
+    GoRoute(
+      path: '/settings',
+      builder: (context, state) => const SettingsPage(),
     ),
   ],
 );
