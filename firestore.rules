@@ -72,6 +72,14 @@ service cloud.firestore {
       allow create, update, delete: if isAdmin();
     }
 
+    // Demandes d'envoi push : écrites par l'admin depuis le dashboard,
+    // traitées par la Cloud Function (onDocumentCreated) qui écrit le
+    // résultat (sent/failed/status) dans le même doc.
+    match /pushRequests/{requestId} {
+      allow read, create: if isAdmin();
+      allow update, delete: if false;
+    }
+
     // Pages légales (politique de confidentialité, CGU, mentions légales,
     // avertissement médical, consentement) : lues par les utilisateurs
     // connectés, éditées par l'admin. Champs : key, title, content.

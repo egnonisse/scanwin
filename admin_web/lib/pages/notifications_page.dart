@@ -1,5 +1,6 @@
+import 'dart:async';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter/material.dart';
 
 import '../widgets/image_picker_field.dart';
@@ -150,17 +151,34 @@ class _NotificationsPageState extends State<NotificationsPage> {
                       if (!formKey.currentState!.validate()) return;
                       setDialogState(() => sending = true);
                       try {
-                        final callable = FirebaseFunctions.instance
-                            .httpsCallable('sendPush');
-                        final response = await callable.call({
+                        // Pattern Firestore : le dashboard écrit une
+                        // demande, la Cloud Function l'envoie et écrit le
+                        // résultat dans le même doc.
+                        final ref = await FirebaseFirestore.instance
+                            .collection('pushRequests')
+                            .add({
                           'title': titleController.text.trim(),
                           'body': bodyController.text.trim(),
+                          'createdAt': FieldValue.serverTimestamp(),
                         });
-                        final data = response.data as Map;
-                        if (!dialogContext.mounted) return;
-                        Navigator.of(dialogContext).pop({
-                          'sent': '${data['sent'] ?? 0}',
-                          'failed': '${data['failed'] ?? 0}',
+
+                        // ignore: cancel_subscriptions
+                        late final StreamSubscription<DocumentSnapshot>
+                            subscription;
+                        subscription = ref.snapshots().listen((doc) {
+                          if (!doc.exists) return;
+                          final status = (doc.data()?['status'] as String?) ??
+                              'pending';
+                          if (status == 'pending') return;
+                          subscription.cancel();
+                          if (!dialogContext.mounted) return;
+                          Navigator.of(dialogContext).pop({
+                            'sent': '${doc.data()?['sent'] ?? 0}',
+                            'failed': '${doc.data()?['failed'] ?? 0}',
+                            if (status == 'error')
+                              'error': (doc.data()?['error']?.toString() ??
+                                  'Erreur interne'),
+                          });
                         });
                       } catch (e) {
                         if (!dialogContext.mounted) return;

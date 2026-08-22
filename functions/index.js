@@ -2,6 +2,7 @@
 
 const crypto = require('crypto');
 const { onCall, HttpsError } = require('firebase-functions/v2/https');
+const { onDocumentCreated } = require('firebase-functions/v2/firestore');
 const { logger } = require('firebase-functions/logger');
 const admin = require('firebase-admin');
 const { getFirestore, FieldValue, Timestamp } = require('firebase-admin/firestore');
@@ -256,71 +257,72 @@ exports.submitReceipt = onCall(async (request) => {
 
 const ADMIN_EMAILS = ['egnonisse@gmail.com', 'tobossinonleonard@gmail.com'];
 
-/** Envoie une notification push (FCM) à tous les utilisateurs enregistrés.
- *  Réservé à l'admin. Paramètres : { title, body, imageUrl? }. */
-exports.sendPush = onCall(async (request) => {
-  const email = request.auth && request.auth.token
-    ? request.auth.token.email
-    : null;
-  if (!email || !ADMIN_EMAILS.includes(email)) {
-    throw new HttpsError(
-      'permission-denied',
-      'Réservé aux administrateurs.'
+/** Déclencheur : le dashboard écrit un doc dans pushRequests → on envoie le
+ *  push FCM à tous les utilisateurs et on écrit le résultat dans le doc
+ *  (pattern Firestore, fiable sur web — évite le bug Int64 de
+ *  cloud_functions/dart2js). */
+exports.sendPushOnRequest = onDocumentCreated('pushRequests/{requestId}', async (event) => {
+  const snapshot = event.data;
+  if (!snapshot) return;
+
+  const data = snapshot.data();
+  const { title, body, imageUrl } = data || {};
+  if (typeof title !== 'string' || title.trim().length === 0 ||
+      typeof body !== 'string' || body.trim().length === 0) {
+    await snapshot.ref.set(
+      { status: 'error', error: 'Titre et message requis.', sent: 0, failed: 0 },
+      { merge: true }
+    );
+    return;
+  }
+
+  try {
+    // Récupérer tous les tokens FCM enregistrés.
+    const usersSnapshot = await db.collection('users').get();
+    const tokens = [];
+    for (const doc of usersSnapshot.docs) {
+      const token = doc.data().fcmToken;
+      if (typeof token === 'string' && token.length > 0) {
+        tokens.push(token);
+      }
+    }
+
+    if (tokens.length === 0) {
+      await snapshot.ref.set(
+        { status: 'done', sent: 0, failed: 0, message: 'Aucun appareil enregistré.' },
+        { merge: true }
+      );
+      return;
+    }
+
+    const payload = {
+      notification: { title: title.trim(), body: body.trim() },
+      data: imageUrl && typeof imageUrl === 'string' ? { imageUrl } : {},
+      android: { priority: 'high' },
+    };
+
+    let sent = 0;
+    let failed = 0;
+    for (let i = 0; i < tokens.length; i += 500) {
+      const batch = tokens.slice(i, i + 500);
+      const result = await admin.messaging().sendEachForMulticast({
+        tokens: batch,
+        ...payload,
+      });
+      sent += result.successCount;
+      failed += result.failureCount;
+    }
+
+    logger.info('sendPushOnRequest', { sent, failed });
+    await snapshot.ref.set(
+      { status: 'done', sent, failed, completedAt: Timestamp.now() },
+      { merge: true }
+    );
+  } catch (error) {
+    logger.error('sendPushOnRequest failed', error);
+    await snapshot.ref.set(
+      { status: 'error', error: 'Erreur interne.', sent: 0, failed: 0 },
+      { merge: true }
     );
   }
-
-  const { title, body, imageUrl } = request.data || {};
-  if (typeof title !== 'string' || title.trim().length === 0) {
-    throw new HttpsError('invalid-argument', 'Titre requis.');
-  }
-  if (typeof body !== 'string' || body.trim().length === 0) {
-    throw new HttpsError('invalid-argument', 'Message requis.');
-  }
-
-  // Récupérer tous les tokens FCM enregistrés.
-  const usersSnapshot = await db.collection('users').get();
-  const tokens = [];
-  for (const doc of usersSnapshot.docs) {
-    const token = doc.data().fcmToken;
-    if (typeof token === 'string' && token.length > 0) {
-      tokens.push(token);
-    }
-  }
-
-  if (tokens.length === 0) {
-    return { sent: 0, failed: 0, message: 'Aucun appareil enregistré.' };
-  }
-
-  const notification = {
-    title: title.trim(),
-    body: body.trim(),
-  };
-  const payload = {
-    notification,
-    data: {
-      // data: valeurs string uniquement (FCM)
-      ...(imageUrl && typeof imageUrl === 'string'
-        ? { imageUrl }
-        : {}),
-    },
-    // Android : affiche aussi quand l'app est au premier plan.
-    android: { priority: 'high' },
-  };
-
-  let sent = 0;
-  let failed = 0;
-
-  // sendEachForMulticast : max 500 tokens par appel.
-  for (let i = 0; i < tokens.length; i += 500) {
-    const batch = tokens.slice(i, i + 500);
-    const result = await admin.messaging().sendEachForMulticast({
-      tokens: batch,
-      ...payload,
-    });
-    sent += result.successCount;
-    failed += result.failureCount;
-  }
-
-  logger.info('sendPush', { sent, failed });
-  return { sent, failed };
 });
