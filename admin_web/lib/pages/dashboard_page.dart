@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 
 import '../services/firestore_service.dart';
 import 'analytics_page.dart';
+import 'campaigns_page.dart';
 import 'guardes_page.dart';
 import 'medicaments_page.dart';
 import 'pharmacies_page.dart';
@@ -36,6 +37,7 @@ class _DashboardPageState extends State<DashboardPage> {
       const MedicamentsPage(),
       const UsersPage(),
       const AnalyticsPage(),
+      const CampaignsPage(),
       const ReceiptsPage(),
     ];
 
@@ -87,6 +89,11 @@ class _DashboardPageState extends State<DashboardPage> {
                 icon: Icon(Icons.insights_outlined),
                 selectedIcon: Icon(Icons.insights),
                 label: Text('Analytics'),
+              ),
+              NavigationRailDestination(
+                icon: Icon(Icons.campaign_outlined),
+                selectedIcon: Icon(Icons.campaign),
+                label: Text('Campagnes'),
               ),
               NavigationRailDestination(
                 icon: Icon(Icons.receipt_long_outlined),
