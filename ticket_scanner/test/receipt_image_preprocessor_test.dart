@@ -14,14 +14,25 @@ void main() {
   }
 
   group('ReceiptImagePreprocessor.process', () {
-    test('renforce le contraste et conserve le format/dimensions', () {
+    test('upscale ×2 les petites images et produit une image valide', () {
       final input = jpegBytes(64, 32);
       final output = preprocessor.process(input);
 
       final decoded = img.decodeImage(output);
       expect(decoded, isNotNull, reason: 'La sortie doit être une image valide');
-      expect(decoded!.width, 64);
-      expect(decoded.height, 32);
+      // 64×32 < 1600 px de large → upscale ×2.
+      expect(decoded!.width, 128);
+      expect(decoded.height, 64);
+    });
+
+    test('conserve les dimensions des grandes images (≥ 1600 px)', () {
+      final input = jpegBytes(2000, 200);
+      final output = preprocessor.process(input);
+
+      final decoded = img.decodeImage(output);
+      expect(decoded, isNotNull);
+      expect(decoded!.width, 2000);
+      expect(decoded.height, 200);
     });
 
     test('retourne les bytes inchangés si l’image est invalide', () {

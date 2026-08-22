@@ -3,6 +3,7 @@
 const crypto = require('crypto');
 const { onCall, HttpsError } = require('firebase-functions/v2/https');
 const { onDocumentCreated } = require('firebase-functions/v2/firestore');
+const { defineSecret } = require('firebase-functions/params');
 const { logger } = require('firebase-functions/logger');
 const admin = require('firebase-admin');
 const { getFirestore, FieldValue, Timestamp } = require('firebase-admin/firestore');
@@ -326,3 +327,101 @@ exports.sendPushOnRequest = onDocumentCreated('pushRequests/{requestId}', async 
     );
   }
 });
+
+// ---------------------------------------------------------------------------
+// Structuration des reçus par IA (DeepSeek) : l'OCR mobile est bruité sur
+// les reçus thermiques → le LLM reconstruit montants, dates, items, quantités
+// à partir du texte brut. L'IMAGE n'est jamais envoyée ici (texte seul).
+// ---------------------------------------------------------------------------
+
+const DEEPSEEK_API_KEY = defineSecret('DEEPSEEK_API_KEY');
+
+const PARSE_SYSTEM_PROMPT = `Tu es un extracteur de reçus de pharmacie ivoiriens.
+Tu reçois le texte brut d'un reçu (OCR imparfait : fautes, espaces cassés,
+chiffres mal lus). Reconstruis-le en JSON STRICT, sans commentaire, avec ces
+champs exacts :
+{
+  "pharmacyName": "nom de la pharmacie (sans le mot pharmacie si possible)",
+  "dateTicket": "JJ/MM/AAAA ou null si introuvable",
+  "heure": "HH:MM ou null",
+  "items": [{"name": "nom médicament (sans dosage si illisible)", "qty": nombre, "price": nombre entier FCFA}],
+  "total": nombre entier FCFA ou null,
+  "confiance": "haute|moyenne|faible"
+}
+Règles :
+- Les prix ivoiriens sont en FCFA : "2.400" ou "2 400" → 2400 (entier, sans
+  virgule). "1.500F" → 1500.
+- Si un montant semble aberrant (ex: 24000 au lieu de 2400) et qu'il y a un
+  total cohérent, corrige avec le total.
+- Ignore les lignes hors médicaments (adresse, téléphone, TVA, merci).
+- Si le texte est illisible, renvoie confiance "faible" avec le meilleur
+  effort.
+- Réponds UNIQUEMENT le JSON (pas de markdown, pas d'explication).`;
+
+exports.parseReceiptWithAI = onCall(
+  { secrets: [DEEPSEEK_API_KEY], timeoutSeconds: 45 },
+  async (request) => {
+    if (!request.auth) {
+      throw new HttpsError('unauthenticated', 'Connexion requise.');
+    }
+
+    const rawText = request.data && request.data.rawText;
+    if (typeof rawText !== 'string' || rawText.trim().length < 20) {
+      throw new HttpsError('invalid-argument', 'Texte du reçu requis.');
+    }
+
+    const apiKey = DEEPSEEK_API_KEY.value();
+    const response = await fetch('https://api.deepseek.com/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        model: 'deepseek-chat',
+        messages: [
+          { role: 'system', content: PARSE_SYSTEM_PROMPT },
+          { role: 'user', content: rawText.trim().slice(0, 6000) },
+        ],
+        temperature: 0,
+        max_tokens: 1200,
+        response_format: { type: 'json_object' },
+      }),
+    });
+
+    if (!response.ok) {
+      logger.error('parseReceiptWithAI DeepSeek HTTP', response.status);
+      throw new HttpsError('internal', 'Analyse IA indisponible.');
+    }
+
+    const body = await response.json();
+    const content = body && body.choices && body.choices[0]
+      && body.choices[0].message ? body.choices[0].message.content : '';
+
+    let parsed;
+    try {
+      parsed = JSON.parse(content);
+    } catch (e) {
+      logger.error('parseReceiptWithAI JSON parse failed', content);
+      throw new HttpsError('internal', 'Analyse IA invalide.');
+    }
+
+    // Nettoyage : types corrects.
+    const items = (Array.isArray(parsed.items) ? parsed.items : [])
+      .map((item) => ({
+        name: String(item.name || '').trim(),
+        qty: Number(item.qty) || 1,
+        price: Math.round(Number(item.price)) || 0,
+      }))
+      .filter((item) => item.name.length > 0 && item.price > 0);
+
+    return {
+      pharmacyName: String(parsed.pharmacyName || '').trim(),
+      dateTicket: parsed.dateTicket || null,
+      heure: parsed.heure || null,
+      items,
+      total: parsed.total ? Math.round(Number(parsed.total)) : null,
+      confiance: parsed.confiance || 'moyenne',
+    };
+  }
+);

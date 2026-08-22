@@ -7,6 +7,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 import '../../../../core/analytics/app_analytics.dart';
+import '../../data/services/receipt_ai_parser.dart';
 import '../../data/services/receipt_image_preprocessor.dart';
 import '../../domain/services/receipt_parser.dart';
 import 'scanner_state.dart';
@@ -15,14 +16,17 @@ class ScannerCubit extends Cubit<ScannerState> {
   ScannerCubit({
     required ReceiptParser parser,
     ReceiptImagePreprocessor? preprocessor,
+    ReceiptAiParser? aiParser,
     AppAnalytics? analytics,
   })  : _parser = parser,
         _preprocessor = preprocessor ?? const ReceiptImagePreprocessor(),
+        _aiParser = aiParser ?? ReceiptAiParser(),
         _analytics = analytics ?? AppAnalytics(),
         super(const ScannerState.initial());
 
   final ReceiptParser _parser;
   final ReceiptImagePreprocessor _preprocessor;
+  final ReceiptAiParser _aiParser;
   final AppAnalytics _analytics;
 
   Future<bool> requestCameraPermission() async {
@@ -89,6 +93,23 @@ class ScannerCubit extends Cubit<ScannerState> {
         final rawText = recognizedText.text;
         // Log OCR brut : indispensable pour déboguer l'extraction.
         debugPrint('[OCR] rawText:\n$rawText');
+
+        // 1. IA d'abord (reconstruction fiable des reçus thermiques).
+        final aiExtraction = await _aiParser.parse(rawText: rawText);
+        if (aiExtraction != null && aiExtraction.isValidForMvp) {
+          await _analytics.logScanSuccess(
+              itemCount: aiExtraction.items.length);
+          emit(
+            state.copyWith(
+              isLoading: false,
+              extraction: aiExtraction,
+              imagePath: tmpFile.path,
+            ),
+          );
+          return;
+        }
+
+        // 2. Fallback : parser local (règles heuristiques).
         final extraction = _parser.parse(rawText: rawText);
         await _analytics.logScanSuccess(itemCount: extraction.items.length);
         emit(
