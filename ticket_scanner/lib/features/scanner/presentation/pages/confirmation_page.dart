@@ -153,6 +153,21 @@ class _ConfirmationForm extends StatelessWidget {
     );
   }
 
+  /// Hors ligne : le reçu est en file d'attente locale, envoi auto plus tard.
+  void _onQueuedOffline(BuildContext context) {
+    context.read<ConfirmationCubit>().reset();
+    context.go('/home');
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text(
+          'Pas de connexion : reçu enregistré sur ton téléphone. '
+          'Il sera envoyé automatiquement au retour du réseau (+10 points).',
+        ),
+        duration: Duration(seconds: 6),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final montant = double.tryParse(montantController.text.replaceAll(',', '.'));
@@ -226,6 +241,9 @@ class _ConfirmationForm extends StatelessWidget {
             listener: (context, state) {
               if (state.status == ConfirmationStatus.success) {
                 _onSuccess(context, state);
+              }
+              if (state.status == ConfirmationStatus.queuedOffline) {
+                _onQueuedOffline(context);
               }
             },
             builder: (context, state) {

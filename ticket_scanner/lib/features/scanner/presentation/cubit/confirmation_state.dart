@@ -1,4 +1,4 @@
-enum ConfirmationStatus { initial, submitting, success, error }
+enum ConfirmationStatus { initial, submitting, success, queuedOffline, error }
 
 class ConfirmationState {
   const ConfirmationState({

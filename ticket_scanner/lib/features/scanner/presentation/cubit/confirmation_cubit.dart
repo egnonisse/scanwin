@@ -100,6 +100,14 @@ class ConfirmationCubit extends Cubit<ConfirmationState> {
           errorMessage: 'Ce reçu a déjà été soumis.',
         ),
       );
+    } on ReceiptQueuedOfflineException {
+      // Hors ligne : le reçu est en file d'attente locale et sera envoyé
+      // automatiquement au retour du réseau. C'est un succès différé.
+      emit(
+        state.copyWith(
+          status: ConfirmationStatus.queuedOffline,
+        ),
+      );
     } on ReceiptSubmissionException catch (e) {
       emit(
         state.copyWith(

@@ -16,6 +16,12 @@ class ReceiptSubmissionException implements Exception {
   String toString() => detail ?? 'Erreur de soumission du reçu.';
 }
 
+/// Le reçu n'a PAS pu être soumis (hors ligne) et a été mis en file
+/// d'attente locale : il sera envoyé automatiquement au retour du réseau.
+class ReceiptQueuedOfflineException implements Exception {
+  const ReceiptQueuedOfflineException();
+}
+
 abstract class ReceiptRepository {
   /// Soumet un reçu de pharmacie via la Cloud Function [submitReceipt].
   ///
