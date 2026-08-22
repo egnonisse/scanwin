@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 /// Design system PharmaScan.
 ///
@@ -89,48 +88,48 @@ ThemeData buildAppTheme() {
       .apply(bodyColor: AppColors.textPrimary, displayColor: AppColors.textPrimary)
       .copyWith(
         // Titres : Poppins.
-        headlineSmall: GoogleFonts.poppins(
+        headlineSmall: TextStyle(fontFamily: 'Poppins', 
           fontSize: 22,
           fontWeight: FontWeight.w600,
           color: AppColors.textPrimary,
         ),
-        titleLarge: GoogleFonts.poppins(
+        titleLarge: TextStyle(fontFamily: 'Poppins', 
           fontSize: 17,
           fontWeight: FontWeight.w600,
           color: AppColors.textPrimary,
         ),
-        titleMedium: GoogleFonts.poppins(
+        titleMedium: TextStyle(fontFamily: 'Poppins', 
           fontSize: 14,
           fontWeight: FontWeight.w600,
           color: AppColors.textPrimary,
         ),
-        titleSmall: GoogleFonts.poppins(
+        titleSmall: TextStyle(fontFamily: 'Poppins', 
           fontSize: 12,
           fontWeight: FontWeight.w500,
           color: AppColors.textPrimary,
         ),
         // Corps : Inter.
-        bodyLarge: GoogleFonts.inter(
+        bodyLarge: TextStyle(fontFamily: 'Inter', 
           fontSize: 14,
           fontWeight: FontWeight.w400,
           color: AppColors.textPrimary,
         ),
-        bodyMedium: GoogleFonts.inter(
+        bodyMedium: TextStyle(fontFamily: 'Inter', 
           fontSize: 13,
           fontWeight: FontWeight.w400,
           color: AppColors.textPrimary,
         ),
-        bodySmall: GoogleFonts.inter(
+        bodySmall: TextStyle(fontFamily: 'Inter', 
           fontSize: 11,
           fontWeight: FontWeight.w400,
           color: AppColors.textSecondary,
         ),
-        labelLarge: GoogleFonts.poppins(
+        labelLarge: TextStyle(fontFamily: 'Poppins', 
           fontSize: 14,
           fontWeight: FontWeight.w600,
           color: AppColors.onPrimary,
         ),
-        labelMedium: GoogleFonts.poppins(
+        labelMedium: TextStyle(fontFamily: 'Poppins', 
           fontSize: 12,
           fontWeight: FontWeight.w600,
           color: AppColors.textPrimary,
@@ -144,7 +143,7 @@ ThemeData buildAppTheme() {
       backgroundColor: AppColors.primary,
       foregroundColor: AppColors.onPrimary,
       elevation: 0,
-      titleTextStyle: GoogleFonts.poppins(
+      titleTextStyle: TextStyle(fontFamily: 'Poppins', 
         fontSize: 17,
         fontWeight: FontWeight.w600,
         color: AppColors.onPrimary,
@@ -174,7 +173,7 @@ ThemeData buildAppTheme() {
         borderRadius: BorderRadius.circular(AppRadii.field),
         borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
       ),
-      hintStyle: GoogleFonts.inter(
+      hintStyle: TextStyle(fontFamily: 'Inter', 
         fontSize: 14,
         color: AppColors.textMuted,
       ),
@@ -186,7 +185,7 @@ ThemeData buildAppTheme() {
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(AppRadii.button),
         ),
-        textStyle: GoogleFonts.poppins(
+        textStyle: TextStyle(fontFamily: 'Poppins', 
           fontSize: 13,
           fontWeight: FontWeight.w600,
         ),
@@ -200,7 +199,7 @@ ThemeData buildAppTheme() {
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(AppRadii.button),
         ),
-        textStyle: GoogleFonts.poppins(
+        textStyle: TextStyle(fontFamily: 'Poppins', 
           fontSize: 13,
           fontWeight: FontWeight.w500,
         ),
