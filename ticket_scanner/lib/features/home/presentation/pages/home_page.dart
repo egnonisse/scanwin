@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../core/money/money_formatter.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../../../pharmacy/presentation/widgets/pharmacy_sheet.dart';
 import '../../data/repositories/firebase_home_repository.dart';
 import '../../domain/entities/contributor_profile.dart';
 import '../../domain/entities/points_event.dart';
@@ -330,6 +331,11 @@ class _OnDutySection extends StatelessWidget {
                       (p) => ListTile(
                         dense: true,
                         contentPadding: EdgeInsets.zero,
+                        onTap: () => showPharmacySheet(
+                          context,
+                          pharmacy: p,
+                          isOnDuty: true,
+                        ),
                         leading: Container(
                           width: 40,
                           height: 40,
