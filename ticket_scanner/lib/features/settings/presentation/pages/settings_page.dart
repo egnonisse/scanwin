@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 
 import '../../../legal/presentation/widgets/legal_section.dart';
 import '../cubit/settings_cubit.dart';
@@ -60,6 +61,24 @@ class SettingsPage extends StatelessWidget {
               ],
               const SizedBox(height: 20),
               const LegalSection(),
+              const SizedBox(height: 24),
+              // Version de l'app : indispensable pour le support et pour
+              // vérifier qu'une mise à jour est bien arrivée.
+              Center(
+                child: FutureBuilder<PackageInfo>(
+                  future: PackageInfo.fromPlatform(),
+                  builder: (context, snapshot) {
+                    final info = snapshot.data;
+                    return Text(
+                      info == null
+                          ? 'PharmaScan'
+                          : 'PharmaScan ${info.version} '
+                              '(${info.buildNumber})',
+                      style: Theme.of(context).textTheme.bodySmall,
+                    );
+                  },
+                ),
+              ),
             ],
           );
         },
