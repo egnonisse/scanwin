@@ -23,10 +23,12 @@ class NotificationsPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final uid = FirebaseAuth.instance.currentUser?.uid;
+    // PAS de orderBy : where(active)+orderBy(createdAt) exigerait un index
+    // composite (erreur « query requires an index » → page en erreur).
+    // Tri côté client.
     final announcementsRef = FirebaseFirestore.instance
         .collection('announcements')
         .where('active', isEqualTo: true)
-        .orderBy('createdAt', descending: true)
         .snapshots();
     final readRef = uid == null
         ? const Stream<QuerySnapshot>.empty()
@@ -49,7 +51,16 @@ class NotificationsPage extends StatelessWidget {
           if (!snapshot.hasData) {
             return const Center(child: CircularProgressIndicator());
           }
-          final docs = snapshot.data!.docs;
+          final docs = snapshot.data!.docs.toList()
+            ..sort((a, b) {
+              // Tri côté client : plus récentes d'abord.
+              final at = (a.data() as Map?)?['createdAt'] as Timestamp?;
+              final bt = (b.data() as Map?)?['createdAt'] as Timestamp?;
+              if (at == null && bt == null) return 0;
+              if (at == null) return 1;
+              if (bt == null) return -1;
+              return bt.compareTo(at);
+            });
           if (docs.isEmpty) {
             return const Center(
               child: Text('Aucune notification pour le moment.'),
