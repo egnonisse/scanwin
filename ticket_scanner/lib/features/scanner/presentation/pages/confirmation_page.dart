@@ -170,6 +170,24 @@ class _ConfirmationForm extends StatelessWidget {
   final VoidCallback onAddItem;
   final void Function(int) onRemoveItem;
 
+  /// Ouvre le sélecteur de pharmacie (liste filtrable, sélection obligatoire).
+  Future<void> _showPharmacyPicker(BuildContext context) {
+    return showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      showDragHandle: true,
+      builder: (sheetContext) => _PharmacyPickerSheet(
+        pharmacies: pharmacyNames,
+        initialQuery: pharmacyController.text,
+        onSelected: (name) {
+          pharmacyController.text = name;
+          Navigator.pop(sheetContext);
+        },
+      ),
+    );
+  }
+
   void _onSuccess(BuildContext context, ConfirmationState state) {
     context.read<ConfirmationCubit>().reset();
     context.go('/home');
@@ -215,34 +233,21 @@ class _ConfirmationForm extends StatelessWidget {
           const SizedBox(height: 12),
           if (formattedAmount != null) Text(formattedAmount),
           const SizedBox(height: 24),
-          Autocomplete<String>(
-            initialValue: TextEditingValue(text: pharmacyController.text),
-            fieldViewBuilder:
-                (context, textController, focusNode, onFieldSubmitted) {
-              return TextField(
-                controller: textController,
-                focusNode: focusNode,
-                onChanged: (value) => pharmacyController.text = value,
-                decoration: const InputDecoration(
-                  labelText: 'Pharmacie',
-                  helperText: 'Choisis dans la liste ou écris librement',
-                ),
-              );
-            },
-            optionsBuilder: (textEditingValue) {
-              if (pharmacyNames.isEmpty) return const Iterable<String>.empty();
-              final query = textEditingValue.text.trim().toLowerCase();
-              if (query.isEmpty) {
-                // Saisie vide : aucune suggestion (évite une liste de 811).
-                return const Iterable<String>.empty();
-              }
-              return pharmacyNames
-                  .where((name) => name.toLowerCase().contains(query))
-                  .take(15);
-            },
-            onSelected: (value) {
-              pharmacyController.text = value;
-            },
+          // Pharmacie : SÉLECTION obligatoire dans la liste (pas de saisie
+          // libre — évite les fautes de frappe). Le champ ouvre un sélecteur
+          // avec zone de recherche.
+          TextField(
+            controller: pharmacyController,
+            readOnly: true,
+            onTap: () => _showPharmacyPicker(context),
+            decoration: InputDecoration(
+              labelText: 'Pharmacie',
+              hintText: 'Tape pour choisir dans la liste',
+              helperText: pharmacyController.text.isEmpty
+                  ? 'Sélection obligatoire — touche le champ pour chercher'
+                  : null,
+              suffixIcon: const Icon(Icons.arrow_drop_down),
+            ),
           ),
           const SizedBox(height: 12),
           TextField(
@@ -418,6 +423,97 @@ class _ItemEditorState extends State<_ItemEditor> {
             onPressed: widget.onRemove,
             icon: const Icon(Icons.delete_outline),
             tooltip: 'Supprimer',
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Sélecteur de pharmacie : zone de recherche + liste filtrable.
+/// Sélection obligatoire (pas de saisie libre → zéro faute de frappe).
+class _PharmacyPickerSheet extends StatefulWidget {
+  const _PharmacyPickerSheet({
+    required this.pharmacies,
+    required this.initialQuery,
+    required this.onSelected,
+  });
+
+  final List<String> pharmacies;
+  final String initialQuery;
+  final void Function(String) onSelected;
+
+  @override
+  State<_PharmacyPickerSheet> createState() => _PharmacyPickerSheetState();
+}
+
+class _PharmacyPickerSheetState extends State<_PharmacyPickerSheet> {
+  late final TextEditingController _searchController;
+  late List<String> _filtered;
+
+  @override
+  void initState() {
+    super.initState();
+    _searchController = TextEditingController(text: widget.initialQuery);
+    _filtered = _applyFilter(widget.initialQuery);
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  List<String> _applyFilter(String query) {
+    final q = query.trim().toLowerCase();
+    final source = widget.pharmacies.isEmpty
+        ? const <String>[]
+        : widget.pharmacies;
+    if (q.isEmpty) return source.take(200).toList();
+    return source
+        .where((name) => name.toLowerCase().contains(q))
+        .take(200)
+        .toList();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      // ~80% de l'écran : liste confortable.
+      height: MediaQuery.of(context).size.height * 0.8,
+      child: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+            child: TextField(
+              controller: _searchController,
+              autofocus: true,
+              decoration: const InputDecoration(
+                labelText: 'Rechercher une pharmacie',
+                prefixIcon: Icon(Icons.search),
+                border: OutlineInputBorder(),
+              ),
+              onChanged: (value) =>
+                  setState(() => _filtered = _applyFilter(value)),
+            ),
+          ),
+          Expanded(
+            child: _filtered.isEmpty
+                ? const Center(
+                    child: Text('Aucune pharmacie trouvée.'),
+                  )
+                : ListView.builder(
+                    itemCount: _filtered.length,
+                    itemBuilder: (context, index) {
+                      final name = _filtered[index];
+                      return ListTile(
+                        dense: true,
+                        leading: const Icon(Icons.local_pharmacy, size: 20),
+                        title: Text(name),
+                        onTap: () => widget.onSelected(name),
+                      );
+                    },
+                  ),
           ),
         ],
       ),
