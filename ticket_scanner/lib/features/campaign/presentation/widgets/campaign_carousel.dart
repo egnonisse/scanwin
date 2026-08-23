@@ -74,7 +74,7 @@ class _CampaignCarouselState extends State<CampaignCarousel> {
         return Column(
           children: [
             SizedBox(
-              height: 110,
+              height: 150,
               child: PageView.builder(
                 controller: _controller,
                 itemCount: campaigns.length,
@@ -128,85 +128,54 @@ class _Banner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = Color(campaign.backgroundColorValue);
     return Padding(
       // Léger espace horizontal pour laisser entrevoir les slides voisins.
       padding: const EdgeInsets.symmetric(horizontal: 4),
-      child: Material(
-        color: color,
-        borderRadius: BorderRadius.circular(AppRadii.card),
-        elevation: 0,
-        shadowColor: Colors.transparent,
-        child: InkWell(
+      child: Container(
+        decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(AppRadii.card),
-          onTap: onTap,
-          child: Container(
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(AppRadii.card),
-              boxShadow: AppShadows.card,
-            ),
-            padding:
-                const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-            child: Row(
-              children: [
-                if (campaign.imageUrl != null &&
-                    campaign.imageUrl!.isNotEmpty)
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(AppRadii.card),
-                    child: Image.network(
+          boxShadow: AppShadows.card,
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(AppRadii.card),
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: onTap,
+              // Bannière IMAGE SEULE (sans fond coloré ni texte) quand une
+              // image est fournie. Fallback minimal sinon.
+              child: campaign.imageUrl != null && campaign.imageUrl!.isNotEmpty
+                  ? Image.network(
                       campaign.imageUrl!,
-                      width: 72,
-                      height: 72,
+                      width: double.infinity,
                       fit: BoxFit.cover,
-                      errorBuilder: (_, _, _) => const Icon(
-                        Icons.campaign,
-                        color: Colors.white,
-                        size: 32,
-                      ),
-                    ),
-                  )
-                else
-                  const Icon(Icons.campaign, color: Colors.white, size: 32),
-                const SizedBox(width: 14),
-                Expanded(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        campaign.title,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          fontFamily: 'Poppins',
-                          fontWeight: FontWeight.w600,
-                          fontSize: 16,
-                          color: Colors.white,
-                        ),
-                      ),
-                      if (campaign.subtitle != null &&
-                          campaign.subtitle!.isNotEmpty) ...[
-                        const SizedBox(height: 3),
-                        Text(
-                          campaign.subtitle!,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            fontFamily: 'Inter',
-                            fontSize: 12,
-                            color: Colors.white70,
-                          ),
-                        ),
-                      ],
-                    ],
-                  ),
-                ),
-                if (campaign.hasUrl)
-                  const Icon(Icons.arrow_forward_ios,
-                      color: Colors.white, size: 14),
-              ],
+                      errorBuilder: (_, _, _) => _fallback(context),
+                    )
+                  : _fallback(context),
             ),
           ),
+        ),
+      ),
+    );
+  }
+
+  /// Fallback minimal : bandeau sans image (titre seul, fond neutre).
+  Widget _fallback(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      color: AppColors.primary,
+      alignment: Alignment.center,
+      padding: const EdgeInsets.symmetric(horizontal: 14),
+      child: Text(
+        campaign.title,
+        maxLines: 2,
+        overflow: TextOverflow.ellipsis,
+        textAlign: TextAlign.center,
+        style: const TextStyle(
+          fontFamily: 'Poppins',
+          fontWeight: FontWeight.w600,
+          fontSize: 16,
+          color: Colors.white,
         ),
       ),
     );
