@@ -57,8 +57,11 @@ class HomeCubit extends Cubit<HomeState> {
 
   /// Relance les abonnements profil + historique (pull-to-refresh).
   /// Les StreamBuilders de la home se resynchronisent via Firestore.
+  /// Le délai minimal garde le spinner visible (le rechargement lui-même
+  /// est quasi instantané avec les streams déjà actifs).
   Future<void> refresh() async {
     start();
+    await Future.delayed(const Duration(milliseconds: 800));
   }
 
   @override

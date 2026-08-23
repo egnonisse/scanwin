@@ -3,15 +3,17 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../../../../core/theme/app_theme.dart';
 import '../../data/repositories/firebase_campaign_repository.dart';
 import '../../domain/entities/campaign.dart';
 
 /// Carrousel de bannières (campagnes pilotées depuis le dashboard admin).
 ///
 /// - PageView horizontal avec auto-scroll (5 s) quand > 1 bannière
+/// - Style moderne : aperçu des slides avant/après (viewportFraction),
+///   pleine largeur, radius 5px, ombre légère (comme le bloc pharmacies)
 /// - Indicateur de position (points)
-/// - Style design system : arrondis 5px, ombre douce, Poppins/Inter
-/// - Clic → ouvre l'URL de la campagne (pub pharmacie, jeux, infos)
+/// - Clic → ouvre l'URL de la campagne
 class CampaignCarousel extends StatefulWidget {
   const CampaignCarousel({super.key});
 
@@ -22,7 +24,7 @@ class CampaignCarousel extends StatefulWidget {
 class _CampaignCarouselState extends State<CampaignCarousel> {
   static const _repository = FirebaseCampaignRepository();
 
-  final PageController _controller = PageController();
+  final PageController _controller = PageController(viewportFraction: 0.92);
   Timer? _autoScrollTimer;
   int _currentPage = 0;
 
@@ -72,7 +74,7 @@ class _CampaignCarouselState extends State<CampaignCarousel> {
         return Column(
           children: [
             SizedBox(
-              height: 84,
+              height: 110,
               child: PageView.builder(
                 controller: _controller,
                 itemCount: campaigns.length,
@@ -128,37 +130,44 @@ class _Banner extends StatelessWidget {
   Widget build(BuildContext context) {
     final color = Color(campaign.backgroundColorValue);
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 2),
+      // Léger espace horizontal pour laisser entrevoir les slides voisins.
+      padding: const EdgeInsets.symmetric(horizontal: 4),
       child: Material(
         color: color,
-        borderRadius: BorderRadius.circular(5),
-        elevation: 1,
+        borderRadius: BorderRadius.circular(AppRadii.card),
+        elevation: 0,
+        shadowColor: Colors.transparent,
         child: InkWell(
-          borderRadius: BorderRadius.circular(5),
+          borderRadius: BorderRadius.circular(AppRadii.card),
           onTap: onTap,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          child: Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(AppRadii.card),
+              boxShadow: AppShadows.card,
+            ),
+            padding:
+                const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
             child: Row(
               children: [
                 if (campaign.imageUrl != null &&
                     campaign.imageUrl!.isNotEmpty)
                   ClipRRect(
-                    borderRadius: BorderRadius.circular(5),
+                    borderRadius: BorderRadius.circular(AppRadii.card),
                     child: Image.network(
                       campaign.imageUrl!,
-                      width: 56,
-                      height: 56,
+                      width: 72,
+                      height: 72,
                       fit: BoxFit.cover,
                       errorBuilder: (_, _, _) => const Icon(
                         Icons.campaign,
                         color: Colors.white,
-                        size: 28,
+                        size: 32,
                       ),
                     ),
                   )
                 else
-                  const Icon(Icons.campaign, color: Colors.white, size: 28),
-                const SizedBox(width: 12),
+                  const Icon(Icons.campaign, color: Colors.white, size: 32),
+                const SizedBox(width: 14),
                 Expanded(
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
@@ -166,18 +175,18 @@ class _Banner extends StatelessWidget {
                     children: [
                       Text(
                         campaign.title,
-                        maxLines: 1,
+                        maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
                           fontFamily: 'Poppins',
                           fontWeight: FontWeight.w600,
-                          fontSize: 15,
+                          fontSize: 16,
                           color: Colors.white,
                         ),
                       ),
                       if (campaign.subtitle != null &&
                           campaign.subtitle!.isNotEmpty) ...[
-                        const SizedBox(height: 2),
+                        const SizedBox(height: 3),
                         Text(
                           campaign.subtitle!,
                           maxLines: 1,
@@ -194,7 +203,7 @@ class _Banner extends StatelessWidget {
                 ),
                 if (campaign.hasUrl)
                   const Icon(Icons.arrow_forward_ios,
-                      color: Colors.white, size:14),
+                      color: Colors.white, size: 14),
               ],
             ),
           ),
