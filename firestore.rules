@@ -34,6 +34,12 @@ service cloud.firestore {
       allow create, update, delete: if isAdmin();
     }
 
+    // Candidats de fusion de pharmacies (détection automatique) :
+    // lus et gérés par l'admin uniquement (validation dans le dashboard).
+    match /mergeCandidates/{candidateId} {
+      allow read, write: if isAdmin();
+    }
+
     // Profil utilisateur : le client ne peut créer que son propre profil
     // avec points == 0, et ne peut modifier QUE currencyCode.
     // Configuration des points (montant par scan) : lue par tous (l'app

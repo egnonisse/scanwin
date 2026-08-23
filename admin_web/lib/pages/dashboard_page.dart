@@ -8,6 +8,7 @@ import 'campaigns_page.dart';
 import 'guardes_page.dart';
 import 'legal_pages_page.dart';
 import 'medicaments_page.dart';
+import 'merges_page.dart';
 import 'notifications_page.dart';
 import 'pharmacies_page.dart';
 import 'points_page.dart';
@@ -38,6 +39,7 @@ class _DashboardPageState extends State<DashboardPage> {
       _StatsView(loadStats: _loadStats),
       const PharmaciesPage(),
       const GuardesPage(),
+      const MergesPage(),
       const MedicamentsPage(),
       const UsersPage(),
       const PointsPage(),
@@ -79,6 +81,10 @@ class _DashboardPageState extends State<DashboardPage> {
               NavigationRailDestination(
                 icon: Icon(Icons.local_hospital),
                 label: Text('Gardes'),
+              ),
+              NavigationRailDestination(
+                icon: Icon(Icons.merge),
+                label: Text('Fusions'),
               ),
               NavigationRailDestination(
                 icon: Icon(Icons.medication),
