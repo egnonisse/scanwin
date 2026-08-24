@@ -1,10 +1,45 @@
 # Fastlane Fastfile — Pharmascan (Scan Cashback)
 # Lanes : build + upload Play Store (track interne / production)
+# AUTO-BUMP : le versionCode est calculé à chaque run (prochain code libre
+# sur tous les tracks) → plus JAMAIS de « Version code already been used »,
+# même en relançant le workflow plusieurs fois.
 default_platform(:android)
 
 platform :android do
+  # Retourne le prochain versionCode libre et l'écrit dans pubspec.yaml.
+  def bump_version_code
+    codes = []
+    %w[internal production].each do |track|
+      begin
+        codes.concat(google_play_track_version_codes(track: track))
+      rescue StandardError
+        # Track inexistant / vide : ignorer.
+      end
+    end
+
+    # Garde-fou : si AUCUN code récupéré (API injoignable, creds KO),
+    # échouer proprement au lieu de tenter le code 1.
+    if codes.empty?
+      UI.user_error!("Impossible de lire les versionCodes Play "
+                     "(API injoignable ou clé invalide).")
+      raise 'Impossible de lire les versionCodes Play'
+    end
+
+    next_code = (codes.map(&:to_i).max || 0) + 1
+
+    path = 'pubspec.yaml'
+    content = File.read(path)
+    content.sub!(/(version:\s*\d+\.\d+\.\d+\+)\d+/, "\\1#{next_code}")
+    File.write(path, content)
+
+    UI.success("VersionCode auto : #{next_code}")
+    next_code
+  end
+
   desc "Build AAB et upload vers le track interne"
   lane :deploy_internal do
+    bump_version_code
+
     # 1. Build de l'AAB signé via Flutter (clé : android/key.properties + keystore)
     #    flutter place l'AAB dans build/app/outputs/bundle/release/
     sh("flutter", "build", "appbundle", "--release")
@@ -23,6 +58,8 @@ platform :android do
 
   desc "Build AAB et upload vers le track production"
   lane :deploy_production do
+    bump_version_code
+
     sh("flutter", "build", "appbundle", "--release")
 
     supply(
