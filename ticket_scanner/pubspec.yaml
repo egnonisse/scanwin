@@ -76,9 +76,10 @@ flutter:
   # the material Icons class.
   uses-material-design: true
 
-  # Logo officiel PharmaScan.
+  # Logo officiel PharmaScan + splash complet (design LEO).
   assets:
     - assets/images/logo.png
+    - assets/images/splash_full.png
 
   # Polices embarquées (pas de téléchargement réseau au runtime).
   fonts:
