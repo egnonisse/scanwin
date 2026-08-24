@@ -1,4 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="ic_launcher_background">#0E7A5F</color>
+    <!-- Fond blanc : l'icône verte ressort nettement (adaptive icon). -->
+    <color name="ic_launcher_background">#FFFFFF</color>
 </resources>

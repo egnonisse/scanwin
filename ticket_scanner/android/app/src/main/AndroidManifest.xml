@@ -12,9 +12,10 @@
         android:name="com.google.android.gms.permission.AD_ID"
         tools:node="remove" />
     <application
-        android:label="ScanWin"
+        android:label="PharmaScan"
         android:name="${applicationName}"
-        android:icon="@mipmap/ic_launcher">
+        android:icon="@mipmap/ic_launcher"
+        android:roundIcon="@mipmap/ic_launcher_round">
         <activity
             android:name=".MainActivity"
             android:exported="true"

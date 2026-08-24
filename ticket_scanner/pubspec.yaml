@@ -80,6 +80,8 @@ flutter:
   assets:
     - assets/images/logo.png
     - assets/images/splash_full.png
+    - assets/images/avatar_default.png
+    - assets/images/watermark.png
 
   # Polices embarquées (pas de téléchargement réseau au runtime).
   fonts:
