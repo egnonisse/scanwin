@@ -20,8 +20,7 @@ platform :android do
     # Garde-fou : si AUCUN code récupéré (API injoignable, creds KO),
     # échouer proprement au lieu de tenter le code 1.
     if codes.empty?
-      UI.user_error!("Impossible de lire les versionCodes Play "
-                     "(API injoignable ou clé invalide).")
+      UI.user_error!("Impossible de lire les versionCodes Play (API injoignable ou clé invalide).")
       raise 'Impossible de lire les versionCodes Play'
     end
 
