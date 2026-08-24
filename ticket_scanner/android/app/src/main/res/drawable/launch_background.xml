@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Écran de lancement natif : fond blanc + logo centré (le logo est vert
-     foncé — sur fond vert il serait illisible). Transition parfaite avec le
-     splash Flutter (fond clair). Affiché dès la première milliseconde. -->
+<!-- Écran de lancement natif : design complet du splash (splash_full).
+     Android 12+ fait du letterboxing (ratio conservé, fond blanc autour)
+     → transition invisible avec le splash Flutter. -->
 <layer-list xmlns:android="http://schemas.android.com/apk/res/android">
     <item>
         <shape android:shape="rectangle">
@@ -11,6 +11,6 @@
     <item>
         <bitmap
             android:gravity="center"
-            android:src="@drawable/logo_splash" />
+            android:src="@drawable/splash_background" />
     </item>
 </layer-list>

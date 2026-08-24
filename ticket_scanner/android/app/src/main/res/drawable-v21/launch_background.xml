@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Écran de lancement natif (mode nuit) : fond blanc + logo centré. -->
+<!-- Écran de lancement natif (mode nuit) : design complet du splash. -->
 <layer-list xmlns:android="http://schemas.android.com/apk/res/android">
     <item>
         <shape android:shape="rectangle">
@@ -9,6 +9,6 @@
     <item>
         <bitmap
             android:gravity="center"
-            android:src="@drawable/logo_splash" />
+            android:src="@drawable/splash_background" />
     </item>
 </layer-list>
