@@ -26,7 +26,9 @@ platform :android do
 
     next_code = (codes.map(&:to_i).max || 0) + 1
 
-    path = 'pubspec.yaml'
+    # Chemin absolu : fastlane s'exécute depuis fastlane/ (dossier du
+    # Fastfile), pas depuis la racine du projet.
+    path = File.expand_path('../pubspec.yaml', __dir__)
     content = File.read(path)
     content.sub!(/(version:\s*\d+\.\d+\.\d+\+)\d+/, "\\1#{next_code}")
     File.write(path, content)
