@@ -9,7 +9,7 @@ platform :android do
   # Retourne le prochain versionCode libre et l'écrit dans pubspec.yaml.
   def bump_version_code
     codes = []
-    %w[internal production].each do |track|
+    %w[internal alpha beta production].each do |track|
       begin
         codes.concat(google_play_track_version_codes(track: track))
       rescue StandardError
@@ -49,6 +49,23 @@ platform :android do
     supply(
       aab: "build/app/outputs/bundle/release/app-release.aab",
       track: "internal",
+      skip_upload_apk: true,
+      skip_upload_aab: false,
+      skip_upload_metadata: true,
+      skip_upload_images: true,
+      skip_upload_screenshots: true
+    )
+  end
+
+  desc "Build AAB et upload vers le track fermé (closed testing — requis Google 14j/12 testeurs)"
+  lane :deploy_closed do
+    bump_version_code
+
+    sh("flutter", "build", "appbundle", "--release")
+
+    supply(
+      aab: "build/app/outputs/bundle/release/app-release.aab",
+      track: "alpha",
       skip_upload_apk: true,
       skip_upload_aab: false,
       skip_upload_metadata: true,

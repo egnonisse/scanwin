@@ -4,12 +4,13 @@ on:
   workflow_dispatch:
     inputs:
       track:
-        description: 'Track cible (internal = tests internes, production)'
+        description: 'Track cible (internal = équipe, closed = test fermé 14j, production)'
         required: true
         default: 'internal'
         type: choice
         options:
           - internal
+          - closed
           - production
   push:
     tags:
@@ -68,6 +69,8 @@ jobs:
         run: |
           if [ "${{ github.event.inputs.track }}" = "production" ] || [ "${{ github.ref_type }}" = "tag" ]; then
             bundle exec fastlane android deploy_production
+          elif [ "${{ github.event.inputs.track }}" = "closed" ]; then
+            bundle exec fastlane android deploy_closed
           else
             bundle exec fastlane android deploy_internal
           fi
