@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:package_info_plus/package_info_plus.dart';
+import 'package:share_plus/share_plus.dart';
 
 import '../../../legal/presentation/widgets/legal_section.dart';
 import '../cubit/settings_cubit.dart';
@@ -59,6 +60,26 @@ class SettingsPage extends StatelessWidget {
                   ),
                 ),
               ],
+              const SizedBox(height: 20),
+              // Partager l'app avec l'entourage (bouche-à-oreille).
+              Card(
+                child: ListTile(
+                  leading: const Icon(Icons.share),
+                  title: const Text('Partager PharmaScan'),
+                  subtitle: const Text(
+                    'Invite ton entourage à comparer les prix des '
+                    'médicaments',
+                  ),
+                  onTap: () => Share.share(
+                    'PharmaScan — Comparez. Payez juste.\n\n'
+                    'Compare les prix des médicaments dans les pharmacies '
+                    'près de chez toi et trouve les pharmacies de garde.\n\n'
+                    'Télécharge ici : '
+                    'https://play.google.com/store/apps/details'
+                    '?id=com.softhubapp.scanapp',
+                  ),
+                ),
+              ),
               const SizedBox(height: 20),
               const LegalSection(),
               const SizedBox(height: 24),
