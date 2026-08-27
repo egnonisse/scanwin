@@ -70,13 +70,16 @@ class SettingsPage extends StatelessWidget {
                     'Invite ton entourage à comparer les prix des '
                     'médicaments',
                   ),
-                  onTap: () => Share.share(
-                    'PharmaScan — Comparez. Payez juste.\n\n'
-                    'Compare les prix des médicaments dans les pharmacies '
-                    'près de chez toi et trouve les pharmacies de garde.\n\n'
-                    'Télécharge ici : '
-                    'https://play.google.com/store/apps/details'
-                    '?id=com.softhubapp.scanapp',
+                  onTap: () => SharePlus.instance.share(
+                    ShareParams(
+                      text: 'PharmaScan — Comparez. Payez juste.\n\n'
+                          'Compare les prix des médicaments dans les '
+                          'pharmacies près de chez toi et trouve les '
+                          'pharmacies de garde.\n\n'
+                          'Télécharge ici : '
+                          'https://play.google.com/store/apps/details'
+                          '?id=com.softhubapp.scanapp',
+                    ),
                   ),
                 ),
               ),
