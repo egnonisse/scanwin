@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:geolocator/geolocator.dart';
 
+import '../../../../core/theme/app_theme.dart';
 import '../../domain/entities/pharmacy.dart';
 import '../cubit/pharmacies_cubit.dart';
 import '../widgets/pharmacy_sheet.dart';
@@ -18,6 +19,7 @@ class PharmaciesPage extends StatefulWidget {
 class _PharmaciesPageState extends State<PharmaciesPage> {
   String _communeFilter = '';
   bool _showOnDutyOnly = false;
+  bool _showNearbyOnly = false;
 
   @override
   Widget build(BuildContext context) {
@@ -55,6 +57,14 @@ class _PharmaciesPageState extends State<PharmaciesPage> {
           (p.commune ?? '') != _communeFilter) {
         return false;
       }
+      if (_showNearbyOnly) {
+        final lat = state.userLat;
+        final lng = state.userLng;
+        final distance =
+            lat == null || lng == null ? null : p.distanceKmFrom(lat, lng);
+        // Rayon « près de chez moi » : 10 km maximum.
+        if (distance == null || distance > 10) return false;
+      }
       return true;
     }).toList();
 
@@ -65,23 +75,50 @@ class _PharmaciesPageState extends State<PharmaciesPage> {
           padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
           child: Wrap(
             spacing: 8,
-            runSpacing: 4,
+            runSpacing: 8,
             crossAxisAlignment: WrapCrossAlignment.center,
             children: [
-              DropdownButton<String>(
-                value: _communeFilter.isEmpty ? null : _communeFilter,
-                hint: const Text('Toutes les communes'),
-                items: [
-                  for (final c in communes)
-                    DropdownMenuItem(value: c, child: Text(c)),
-                ],
-                onChanged: (v) => setState(() => _communeFilter = v ?? ''),
+              // Champ de filtre commune : vraie zone cliquable avec bordure.
+              SizedBox(
+                width: 190,
+                child: DropdownButtonFormField<String>(
+                  initialValue:
+                      _communeFilter.isEmpty ? null : _communeFilter,
+                  isDense: true,
+                  decoration: InputDecoration(
+                    labelText: 'Commune',
+                    hintText: 'Toutes les communes',
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(AppRadii.card),
+                    ),
+                    contentPadding:
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  ),
+                  items: [
+                    for (final c in communes)
+                      DropdownMenuItem(value: c, child: Text(c)),
+                  ],
+                  onChanged: (v) =>
+                      setState(() => _communeFilter = v ?? ''),
+                ),
               ),
               FilterChip(
                 label: const Text('De garde aujourd\'hui'),
                 selected: _showOnDutyOnly,
                 onSelected: (v) =>
                     setState(() => _showOnDutyOnly = v),
+              ),
+              FilterChip(
+                avatar: Icon(
+                  Icons.near_me,
+                  size: 16,
+                  color: _showNearbyOnly
+                      ? Theme.of(context).colorScheme.primary
+                      : null,
+                ),
+                label: const Text('Près de chez moi'),
+                selected: _showNearbyOnly,
+                onSelected: (v) => setState(() => _showNearbyOnly = v),
               ),
             ],
           ),

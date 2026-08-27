@@ -75,17 +75,25 @@ class NotificationsPage extends StatelessWidget {
                   doc.id,
               };
 
-              return ListView(
-                padding: const EdgeInsets.all(16),
-                children: [
-                  for (final doc in docs)
-                    _NotificationTile(
-                      id: doc.id,
-                      data: doc.data() as Map<String, dynamic>? ?? const {},
-                      isRead: readIds.contains(doc.id),
-                      onTap: () => _markAsRead(context, doc.id),
-                    ),
-                ],
+              return RefreshIndicator(
+                onRefresh: () async {
+                  // Les streams Firestore se resynchronisent seuls ; le
+                  // délai garde le spinner visible.
+                  await Future.delayed(const Duration(milliseconds: 800));
+                },
+                child: ListView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  padding: const EdgeInsets.all(16),
+                  children: [
+                    for (final doc in docs)
+                      _NotificationTile(
+                        id: doc.id,
+                        data: doc.data() as Map<String, dynamic>? ?? const {},
+                        isRead: readIds.contains(doc.id),
+                        onTap: () => _markAsRead(context, doc.id),
+                      ),
+                  ],
+                ),
               );
             },
           );

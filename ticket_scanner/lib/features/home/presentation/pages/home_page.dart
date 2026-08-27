@@ -149,7 +149,7 @@ class _SearchBar extends StatelessWidget {
         onTap: onTap,
         borderRadius: BorderRadius.circular(AppRadii.field),
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(AppRadii.field),
             boxShadow: AppShadows.searchBar,
@@ -159,15 +159,24 @@ class _SearchBar extends StatelessWidget {
               const Icon(Icons.search, color: AppColors.primary, size: 20),
               const SizedBox(width: 10),
               Expanded(
-                child: Text(
-                  'Rechercher un médicament ou une pharmacie…',
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: AppColors.textMuted,
-                      ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
+                child: TextField(
+                  readOnly: true,
+                  showCursor: false,
+                  onTap: onTap,
+                  decoration: InputDecoration(
+                    hintText: 'Rechercher un médicament ou une pharmacie…',
+                    hintStyle:
+                        Theme.of(context).textTheme.bodyMedium?.copyWith(
+                              color: AppColors.textMuted,
+                            ),
+                    border: InputBorder.none,
+                    isDense: true,
+                  ),
                 ),
               ),
+              // Affordance « ceci ouvre une page » (pas un champ local).
+              const Icon(Icons.chevron_right,
+                  color: AppColors.textMuted, size: 20),
             ],
           ),
         ),

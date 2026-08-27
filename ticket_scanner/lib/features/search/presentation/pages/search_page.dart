@@ -84,8 +84,8 @@ class _SearchPageState extends State<SearchPage> {
             child: IndexedStack(
               index: _tabIndex,
               children: [
-                _buildMedicationTab(context),
                 const PharmaciesPage(),
+                _buildMedicationTab(context),
               ],
             ),
           ),
@@ -174,9 +174,20 @@ class _SearchPageState extends State<SearchPage> {
                           ),
                         );
                       }
-                      return ListView(
-                        padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-                        children: [
+                      return RefreshIndicator(
+                        onRefresh: () async {
+                          // Relance la recherche courante (ex : après une
+                          // coupure réseau) + délai pour le spinner.
+                          searchContext
+                              .read<SearchCubit>()
+                              .search(_controller.text);
+                          await Future.delayed(
+                              const Duration(milliseconds: 800));
+                        },
+                        child: ListView(
+                          physics: const AlwaysScrollableScrollPhysics(),
+                          padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                          children: [
                           if (state.results.isNotEmpty) ...[
                             Text(
                               'Prix trouvés',
@@ -200,7 +211,8 @@ class _SearchPageState extends State<SearchPage> {
                             for (final med in state.medications)
                               _MedicationTile(medication: med),
                           ],
-                        ],
+                          ],
+                        ),
                       );
                     },
                   );
@@ -366,14 +378,14 @@ class _TabBar extends StatelessWidget {
       child: Row(
         children: [
           _TabItem(
-            label: 'Médicaments',
-            icon: Icons.medication,
+            label: 'Pharmacies',
+            icon: Icons.local_pharmacy,
             active: index == 0,
             onTap: () => onChanged(0),
           ),
           _TabItem(
-            label: 'Pharmacies',
-            icon: Icons.local_pharmacy,
+            label: 'Médicaments',
+            icon: Icons.medication,
             active: index == 1,
             onTap: () => onChanged(1),
           ),

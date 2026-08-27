@@ -71,6 +71,19 @@ class _CampaignCarouselState extends State<CampaignCarousel> {
 
         _startAutoScroll(campaigns.length);
 
+        // Une seule bannière : pleine largeur, sans PageView ni padding
+        // (pas d'espace vide avant/après).
+        if (campaigns.length == 1) {
+          return SizedBox(
+            height: 150,
+            child: _Banner(
+              campaign: campaigns.first,
+              onTap: () => _openCampaign(campaigns.first.url),
+              padded: false,
+            ),
+          );
+        }
+
         return Column(
           children: [
             SizedBox(
@@ -121,16 +134,24 @@ class _CampaignCarouselState extends State<CampaignCarousel> {
 }
 
 class _Banner extends StatelessWidget {
-  const _Banner({required this.campaign, required this.onTap});
+  const _Banner({
+    required this.campaign,
+    required this.onTap,
+    this.padded = true,
+  });
 
   final Campaign campaign;
   final VoidCallback onTap;
+
+  /// Padding horizontal (aperçu des slides voisins) — désactivé quand la
+  /// bannière est seule (pleine largeur).
+  final bool padded;
 
   @override
   Widget build(BuildContext context) {
     return Padding(
       // Léger espace horizontal pour laisser entrevoir les slides voisins.
-      padding: const EdgeInsets.symmetric(horizontal: 4),
+      padding: EdgeInsets.symmetric(horizontal: padded ? 4 : 0),
       child: Container(
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(AppRadii.card),
