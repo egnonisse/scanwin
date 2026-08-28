@@ -8,6 +8,7 @@ import '../features/legal/presentation/widgets/legal_section.dart';
 import '../features/notification/presentation/pages/notifications_page.dart';
 import '../features/scanner/presentation/pages/confirmation_page.dart';
 import '../features/scanner/presentation/pages/scanner_page.dart';
+import '../features/search/presentation/pages/medication_detail_page.dart';
 import '../features/search/presentation/pages/search_page.dart';
 import '../features/settings/presentation/pages/settings_page.dart';
 import '../features/splash/presentation/pages/splash_page.dart';
@@ -41,6 +42,13 @@ final _router = GoRouter(
       path: '/search',
       builder: (context, state) =>
           SearchPage(initialQuery: state.uri.queryParameters['q'] ?? ''),
+    ),
+    GoRoute(
+      path: '/medication',
+      builder: (context, state) => MedicationDetailPage(
+        name: state.uri.queryParameters['name'] ?? '',
+        title: state.uri.queryParameters['title'],
+      ),
     ),
     GoRoute(
       path: '/confirmation',

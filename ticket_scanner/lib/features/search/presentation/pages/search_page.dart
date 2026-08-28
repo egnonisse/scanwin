@@ -247,9 +247,15 @@ List<Widget> _buildPriceGroups(
       Card(
         child: ExpansionTile(
           leading: const Icon(Icons.medication),
-          title: Text(
-            name,
-            style: const TextStyle(fontWeight: FontWeight.w600),
+          title: InkWell(
+            onTap: () => context.push(
+              '/medication?name=${Uri.encodeComponent(name)}'
+              '&title=${Uri.encodeComponent(name)}',
+            ),
+            child: Text(
+              name,
+              style: const TextStyle(fontWeight: FontWeight.w600),
+            ),
           ),
           subtitle: Text(
             'Dès ${MoneyFormatter.formatAmount(groups[name]!.first.price, currencyCode)} '
@@ -289,6 +295,10 @@ class _MedicationTile extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 8),
       child: ListTile(
         leading: const Icon(Icons.medication),
+        onTap: () => context.push(
+          '/medication?name=${Uri.encodeComponent(medication.name)}'
+          '&title=${Uri.encodeComponent(medication.name)}',
+        ),
         title: Text(
           medication.name,
           maxLines: 2,
