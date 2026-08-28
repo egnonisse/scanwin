@@ -19,7 +19,8 @@
 
 | # | Feature | Statut |
 |---|---------|--------|
-| 1.1 | Seed de prix initial (sources officielles/partenaires) | 🔄 EN COURS |
+| 1.1 | Seed de prix initial (sources officielles/partenaires) | ✅ 3 809 prix publics importés + 53 800 produits parapharmacie |
+| 1.1b | Photos des produits | ⏸️ OPTION B choisie : fiche sans photo (le scraping Bing = 60-80% de bruit ; source structurée nécessaire plus tard — piste Google Custom Search API 100 req/j gratuites) |
 | 1.2 | Parrainage (code → points parrain + filleul) | ⏳ |
 | 1.3 | Modération IA des scans (dashboard) | ⏳ (base existante à enrichir) |
 | 1.4 | Alertes prix en baisse (push) | ⏳ |
