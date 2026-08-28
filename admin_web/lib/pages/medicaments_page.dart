@@ -1,8 +1,13 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 
-/// Page Médicaments — CRUD de la table des prix (priceEntries).
-/// Champs : medicationName, pharmacyName, price, quantity, scannedAt.
+/// Page Médicaments — gestion complète du contenu :
+/// - Onglet Prix : CRUD des prix + VISIBILITÉ par médicament (œil)
+/// - Onglet Catégories : activer/désactiver des groupes thérapeutiques
+/// - Bandeau de statistiques (total, masqués, catégories désactivées)
+///
+/// La visibilité est stockée dans contentConfig/default :
+/// hiddenMedications[] + disabledCategories[] — l'app filtre à la lecture.
 class MedicamentsPage extends StatefulWidget {
   const MedicamentsPage({super.key});
 
@@ -14,6 +19,7 @@ class _MedicamentsPageState extends State<MedicamentsPage> {
   static const _limit = 100;
   final _searchController = TextEditingController();
   String _query = '';
+  int _tabIndex = 0;
 
   @override
   void dispose() {
@@ -22,10 +28,37 @@ class _MedicamentsPageState extends State<MedicamentsPage> {
   }
 
   Query _baseQuery() {
-    var q = FirebaseFirestore.instance
+    return FirebaseFirestore.instance
         .collection('priceEntries')
         .orderBy('scannedAt', descending: true);
-    return q;
+  }
+
+  Future<void> _toggleHidden(String medicationName, bool hide) async {
+    final ref =
+        FirebaseFirestore.instance.collection('contentConfig').doc('default');
+    if (hide) {
+      await ref.set({
+        'hiddenMedications': FieldValue.arrayUnion([medicationName]),
+      }, SetOptions(merge: true));
+    } else {
+      await ref.update({
+        'hiddenMedications': FieldValue.arrayRemove([medicationName]),
+      });
+    }
+  }
+
+  Future<void> _toggleCategory(String category, bool disable) async {
+    final ref =
+        FirebaseFirestore.instance.collection('contentConfig').doc('default');
+    if (disable) {
+      await ref.set({
+        'disabledCategories': FieldValue.arrayUnion([category]),
+      }, SetOptions(merge: true));
+    } else {
+      await ref.update({
+        'disabledCategories': FieldValue.arrayRemove([category]),
+      });
+    }
   }
 
   @override
@@ -33,7 +66,41 @@ class _MedicamentsPageState extends State<MedicamentsPage> {
     return Column(
       children: [
         Padding(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+          child: _StatsBanner(onRefresh: () => setState(() {})),
+        ),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: SegmentedButton<int>(
+            segments: const [
+              ButtonSegment(
+                value: 0,
+                icon: Icon(Icons.sell),
+                label: Text('Prix'),
+              ),
+              ButtonSegment(
+                value: 1,
+                icon: Icon(Icons.category),
+                label: Text('Catégories'),
+              ),
+            ],
+            selected: {_tabIndex},
+            onSelectionChanged: (s) => setState(() => _tabIndex = s.first),
+          ),
+        ),
+        const SizedBox(height: 8),
+        Expanded(
+          child: _tabIndex == 0 ? _buildPricesTab() : _buildCategoriesTab(),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildPricesTab() {
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           child: Row(
             children: [
               Expanded(
@@ -66,7 +133,12 @@ class _MedicamentsPageState extends State<MedicamentsPage> {
         ),
         Expanded(
           child: _query.isEmpty
-              ? _PrixList(query: _baseQuery().limit(_limit))
+              ? _PrixList(
+                  query: _baseQuery().limit(_limit),
+                  onToggleHidden: _toggleHidden,
+                  onEdit: (doc) => _showEditDialog(context, doc: doc),
+                  onDelete: (doc) => _confirmDelete(context, doc),
+                )
               : _PrixList(
                   query: FirebaseFirestore.instance
                       .collection('priceEntries')
@@ -75,24 +147,70 @@ class _MedicamentsPageState extends State<MedicamentsPage> {
                       .where('medicationName',
                           isLessThanOrEqualTo: '$_query\uf8ff')
                       .limit(_limit),
+                  onToggleHidden: _toggleHidden,
+                  onEdit: (doc) => _showEditDialog(context, doc: doc),
+                  onDelete: (doc) => _confirmDelete(context, doc),
                 ),
         ),
       ],
     );
   }
 
+  Widget _buildCategoriesTab() {
+    return StreamBuilder<DocumentSnapshot>(
+      stream: FirebaseFirestore.instance
+          .collection('contentConfig')
+          .doc('default')
+          .snapshots(),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData) {
+          return const Center(child: CircularProgressIndicator());
+        }
+        final data = snapshot.data!.data() as Map<String, dynamic>? ?? {};
+        final categories =
+            (data['categories'] as List?)?.map((e) => e.toString()).toList() ??
+                [];
+        final disabled = ((data['disabledCategories'] as List?)
+                ?.map((e) => e.toString())
+                .toSet() ??
+            <String>{});
+        return ListView(
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+          children: [
+            Text(
+              '${categories.length} groupes thérapeutiques — désactive une '
+              'catégorie pour la masquer de l\'app.',
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
+            const SizedBox(height: 8),
+            for (final cat in categories)
+              Card(
+                child: ListTile(
+                  dense: true,
+                  title: Text(cat),
+                  trailing: Switch(
+                    value: !disabled.contains(cat),
+                    onChanged: (active) => _toggleCategory(cat, !active),
+                  ),
+                ),
+              ),
+          ],
+        );
+      },
+    );
+  }
+
   Future<void> _showEditDialog(BuildContext context,
       {QueryDocumentSnapshot? doc}) async {
-    final formKey = GlobalKey<FormState>();
-    final data = doc?.data() as Map<String, dynamic>? ?? const {};
-    final medController = TextEditingController(
-        text: data['medicationName'] as String? ?? '');
-    final pharmController = TextEditingController(
-        text: data['pharmacyName'] as String? ?? '');
+    final medController =
+        TextEditingController(text: doc?['medicationName'] ?? '');
+    final pharmController =
+        TextEditingController(text: doc?['pharmacyName'] ?? '');
     final priceController = TextEditingController(
-        text: (data['price'] as num?)?.toString() ?? '');
-    final qtyController = TextEditingController(
-        text: (data['quantity'] as num?)?.toString() ?? '1');
+        text: doc?['price']?.toString() ?? '');
+    final qtyController =
+        TextEditingController(text: doc?['quantity']?.toString() ?? '1');
+    final formKey = GlobalKey<FormState>();
 
     final saved = await showDialog<bool>(
       context: context,
@@ -100,45 +218,43 @@ class _MedicamentsPageState extends State<MedicamentsPage> {
         title: Text(doc == null ? 'Ajouter un prix' : 'Modifier le prix'),
         content: Form(
           key: formKey,
-          child: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextFormField(
-                  controller: medController,
-                  decoration: const InputDecoration(
-                      labelText: 'Médicament', border: OutlineInputBorder()),
-                  validator: (v) =>
-                      (v == null || v.trim().isEmpty) ? 'Requis' : null,
-                ),
-                const SizedBox(height: 12),
-                TextFormField(
-                  controller: pharmController,
-                  decoration: const InputDecoration(
-                      labelText: 'Pharmacie', border: OutlineInputBorder()),
-                  validator: (v) =>
-                      (v == null || v.trim().isEmpty) ? 'Requis' : null,
-                ),
-                const SizedBox(height: 12),
-                TextFormField(
-                  controller: priceController,
-                  decoration: const InputDecoration(
-                      labelText: 'Prix (FCFA)', border: OutlineInputBorder()),
-                  keyboardType: TextInputType.number,
-                  validator: (v) =>
-                      double.tryParse(v?.replaceAll(',', '.') ?? '') == null
-                          ? 'Nombre requis'
-                          : null,
-                ),
-                const SizedBox(height: 12),
-                TextFormField(
-                  controller: qtyController,
-                  decoration: const InputDecoration(
-                      labelText: 'Quantité', border: OutlineInputBorder()),
-                  keyboardType: TextInputType.number,
-                ),
-              ],
-            ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextFormField(
+                controller: medController,
+                decoration: const InputDecoration(
+                    labelText: 'Médicament', border: OutlineInputBorder()),
+                validator: (v) =>
+                    (v == null || v.trim().isEmpty) ? 'Requis' : null,
+              ),
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: pharmController,
+                decoration: const InputDecoration(
+                    labelText: 'Pharmacie', border: OutlineInputBorder()),
+                validator: (v) =>
+                    (v == null || v.trim().isEmpty) ? 'Requis' : null,
+              ),
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: priceController,
+                decoration: const InputDecoration(
+                    labelText: 'Prix (FCFA)', border: OutlineInputBorder()),
+                keyboardType: TextInputType.number,
+                validator: (v) =>
+                    double.tryParse(v?.replaceAll(',', '.') ?? '') == null
+                        ? 'Nombre requis'
+                        : null,
+              ),
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: qtyController,
+                decoration: const InputDecoration(
+                    labelText: 'Quantité', border: OutlineInputBorder()),
+                keyboardType: TextInputType.number,
+              ),
+            ],
           ),
         ),
         actions: [
@@ -206,10 +322,77 @@ class _MedicamentsPageState extends State<MedicamentsPage> {
   }
 }
 
+/// Bandeau de statistiques : total prix, masqués, catégories désactivées.
+class _StatsBanner extends StatelessWidget {
+  const _StatsBanner({required this.onRefresh});
+
+  final VoidCallback onRefresh;
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder(
+      future: FirebaseFirestore.instance
+          .collection('contentConfig')
+          .doc('default')
+          .get(),
+      builder: (context, configSnap) {
+        final config = configSnap.data?.data() ?? <String, dynamic>{};
+        final hidden = ((config['hiddenMedications'] as List?) ?? []).length;
+        final disabled =
+            ((config['disabledCategories'] as List?) ?? []).length;
+        final categories = ((config['categories'] as List?) ?? []).length;
+        return Card(
+          child: Padding(
+            padding: const EdgeInsets.all(12),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: [
+                _Stat(label: 'Catégories', value: '$categories'),
+                _Stat(label: 'Catégories masquées', value: '$disabled'),
+                _Stat(label: 'Médicaments masqués', value: '$hidden'),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _Stat extends StatelessWidget {
+  const _Stat({required this.label, required this.value});
+
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Text(value,
+            style: Theme.of(context)
+                .textTheme
+                .titleLarge
+                ?.copyWith(fontWeight: FontWeight.w700)),
+        Text(label, style: Theme.of(context).textTheme.bodySmall),
+      ],
+    );
+  }
+}
+
+/// Liste des prix avec actions : éditer, supprimer, VISIBILITÉ (œil).
 class _PrixList extends StatelessWidget {
-  const _PrixList({required this.query});
+  const _PrixList({
+    required this.query,
+    required this.onToggleHidden,
+    required this.onEdit,
+    required this.onDelete,
+  });
 
   final Query query;
+  final Future<void> Function(String medicationName, bool hide) onToggleHidden;
+  final void Function(QueryDocumentSnapshot doc) onEdit;
+  final void Function(QueryDocumentSnapshot doc) onDelete;
 
   @override
   Widget build(BuildContext context) {
@@ -217,64 +400,68 @@ class _PrixList extends StatelessWidget {
       stream: query.snapshots(),
       builder: (context, snapshot) {
         if (snapshot.hasError) {
-          return Center(child: Text('Erreur : ${snapshot.error}'));
+          return Center(
+              child: Text('Erreur : ${snapshot.error}',
+                  style: const TextStyle(color: Colors.red)));
         }
         if (!snapshot.hasData) {
           return const Center(child: CircularProgressIndicator());
         }
         final docs = snapshot.data!.docs;
         if (docs.isEmpty) {
-          return const Center(
-              child: Text('Aucun prix en base. Scannez des tickets ou ajoutez manuellement.'));
+          return const Center(child: Text('Aucun prix trouvé.'));
         }
-        return ListView.separated(
-          padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+        return ListView.builder(
           itemCount: docs.length,
-          separatorBuilder: (_, _) => const SizedBox(height: 4),
           itemBuilder: (context, index) {
             final doc = docs[index];
-            final data = doc.data()! as Map<String, dynamic>;
-            final price = data['price'];
-            final qty = data['quantity'];
-            return Card(
-              child: ListTile(
-                leading: Icon(Icons.medication,
-                    color: Theme.of(context).colorScheme.primary),
-                title: Text(data['medicationName']?.toString() ?? '?'),
-                subtitle: Text(
-                  '${data['pharmacyName'] ?? '?'}'
-                  '${qty != null ? ' · qty $qty' : ''}',
-                ),
-                trailing: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      price is num
-                          ? '${price.toStringAsFixed(0)} F'
-                          : '?',
-                      style: Theme.of(context).textTheme.titleMedium,
-                    ),
-                    IconButton(
-                      tooltip: 'Modifier',
-                      icon: const Icon(Icons.edit_outlined, size: 20),
-                      onPressed: () {
-                        final state = context
-                            .findAncestorStateOfType<_MedicamentsPageState>();
-                        state?._showEditDialog(context, doc: doc);
-                      },
-                    ),
-                    IconButton(
-                      tooltip: 'Supprimer',
-                      icon: const Icon(Icons.delete_outline, size: 20),
-                      onPressed: () {
-                        final state = context
-                            .findAncestorStateOfType<_MedicamentsPageState>();
-                        state?._confirmDelete(context, doc);
-                      },
-                    ),
-                  ],
-                ),
-              ),
+            final data = doc.data() as Map<String, dynamic>? ?? {};
+            final medName = data['medicationName'] ?? '?';
+            return FutureBuilder<Map<String, dynamic>>(
+              future: FirebaseFirestore.instance
+                  .collection('contentConfig')
+                  .doc('default')
+                  .get()
+                  .then((d) => d.data() ?? <String, dynamic>{}),
+              builder: (context, configSnap) {
+                final config = configSnap.data ?? <String, dynamic>{};
+                final hidden = ((config['hiddenMedications'] as List?) ?? [])
+                    .contains(medName);
+                return ListTile(
+                  dense: true,
+                  title: Text(medName, overflow: TextOverflow.ellipsis),
+                  subtitle: Text(
+                    '${data['pharmacyName'] ?? '?'} — '
+                    '${(data['price'] as num?)?.toStringAsFixed(0) ?? '?'} F'
+                    '${hidden ? ' · MASQUÉ' : ''}',
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  trailing: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      IconButton(
+                        icon: Icon(
+                          hidden ? Icons.visibility_off : Icons.visibility,
+                          color: hidden ? Colors.red : null,
+                        ),
+                        tooltip:
+                            hidden ? 'Rendre visible' : 'Masquer de l\'app',
+                        onPressed: () => onToggleHidden(medName, !hidden),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.edit_outlined),
+                        tooltip: 'Modifier',
+                        onPressed: () => onEdit(doc),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.delete_outline),
+                        tooltip: 'Supprimer',
+                        onPressed: () => onDelete(doc),
+                      ),
+                    ],
+                  ),
+                );
+              },
             );
           },
         );

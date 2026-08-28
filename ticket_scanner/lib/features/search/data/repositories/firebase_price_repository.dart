@@ -6,6 +6,25 @@ import '../../domain/repositories/price_repository.dart';
 class FirebasePriceRepository implements PriceRepository {
   const FirebasePriceRepository();
 
+  /// Filtres de visibilité chargés depuis contentConfig/default.
+  Future<_ContentFilters> _loadFilters() async {
+    final doc = await FirebaseFirestore.instance
+        .collection('contentConfig')
+        .doc('default')
+        .get();
+    final data = doc.data() ?? <String, dynamic>{};
+    return _ContentFilters(
+      hiddenMedications: (data['hiddenMedications'] as List?)
+              ?.map((e) => e.toString())
+              .toSet() ??
+          const {},
+      disabledCategories: (data['disabledCategories'] as List?)
+              ?.map((e) => e.toString().toUpperCase())
+              .toSet() ??
+          const {},
+    );
+  }
+
   /// Normalise un nom (minuscules, sans accents) — même règle que la
   /// Cloud Function à la soumission.
   static String normalize(String value) {
@@ -35,12 +54,31 @@ class FirebasePriceRepository implements PriceRepository {
         .orderBy('price')
         .limit(30);
 
-    return ref.snapshots().map(
-          (snapshot) => snapshot.docs
-              .map((doc) => PriceEntryModel.fromDoc(doc).toEntity())
-              .toList(growable: false),
-        );
+    return ref.snapshots().asyncMap(
+      (snapshot) async {
+        final filters = await _loadFilters();
+        return snapshot.docs
+            .map((doc) => PriceEntryModel.fromDoc(doc))
+            .where((m) => !filters.hiddenMedications.contains(m.medicationName))
+            .where((m) =>
+                m.therapeuticGroup == null ||
+                !filters.disabledCategories
+                    .contains(m.therapeuticGroup!.toUpperCase()))
+            .map((m) => m.toEntity())
+            .toList(growable: false);
+      },
+    );
   }
+}
+
+class _ContentFilters {
+  const _ContentFilters({
+    required this.hiddenMedications,
+    required this.disabledCategories,
+  });
+
+  final Set<String> hiddenMedications;
+  final Set<String> disabledCategories;
 }
 
 class PriceEntryModel {
@@ -52,6 +90,7 @@ class PriceEntryModel {
     required this.price,
     required this.quantity,
     required this.scannedAt,
+    this.therapeuticGroup,
   });
 
   final String id;
@@ -61,6 +100,7 @@ class PriceEntryModel {
   final num price;
   final num quantity;
   final Timestamp? scannedAt;
+  final String? therapeuticGroup;
 
   PriceEntry toEntity() {
     return PriceEntry(
@@ -84,6 +124,7 @@ class PriceEntryModel {
       price: data['price'] as num? ?? 0,
       quantity: data['quantity'] as num? ?? 1,
       scannedAt: data['scannedAt'] as Timestamp?,
+      therapeuticGroup: data['therapeuticGroup'] as String?,
     );
   }
 }
