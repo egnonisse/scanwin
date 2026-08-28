@@ -104,6 +104,8 @@ class _SearchPageState extends State<SearchPage> {
         );
         if (query.length >= 3) {
           cubit.search(query);
+        } else {
+          cubit.loadPopular();
         }
         return cubit;
       },
@@ -150,9 +152,44 @@ class _SearchPageState extends State<SearchPage> {
                         );
                       }
                       if (state.query.isEmpty) {
-                        return const Center(
-                          child: Text('Tape le nom d\'un médicament '
-                              '(3 lettres minimum).'),
+                        // Médicaments populaires affichés par défaut.
+                        if (state.isSearching) {
+                          return const Center(
+                            child: CircularProgressIndicator(),
+                          );
+                        }
+                        if (state.results.isEmpty) {
+                          return const Center(
+                            child: Text('Aucun prix pour le moment. '
+                                'Scanne un ticket pour contribuer !'),
+                          );
+                        }
+                        return RefreshIndicator(
+                          onRefresh: () async {
+                            searchContext.read<SearchCubit>().loadPopular();
+                            await Future.delayed(
+                                const Duration(milliseconds: 800));
+                          },
+                          child: ListView(
+                            physics:
+                                const AlwaysScrollableScrollPhysics(),
+                            padding:
+                                const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                            children: [
+                              Text(
+                                'Médicaments populaires',
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .titleMedium,
+                              ),
+                              const SizedBox(height: 8),
+                              ..._buildPriceGroups(
+                                context,
+                                state.results,
+                                settings.currencyCode,
+                              ),
+                            ],
+                          ),
                         );
                       }
                       if (state.errorMessage != null) {

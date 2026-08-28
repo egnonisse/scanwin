@@ -69,6 +69,37 @@ class FirebasePriceRepository implements PriceRepository {
       },
     );
   }
+
+  @override
+  Stream<List<PriceEntry>> watchPopularMeds() {
+    final ref = FirebaseFirestore.instance
+        .collection('priceEntries')
+        .orderBy('scannedAt', descending: true)
+        .limit(120);
+    return ref.snapshots().asyncMap(
+      (snapshot) async {
+        final filters = await _loadFilters();
+        final seen = <String>{};
+        final popular = <PriceEntry>[];
+        for (final doc in snapshot.docs) {
+          final model = PriceEntryModel.fromDoc(doc);
+          if (filters.hiddenMedications.contains(model.medicationName)) {
+            continue;
+          }
+          if (model.therapeuticGroup != null &&
+              filters.disabledCategories
+                  .contains(model.therapeuticGroup!.toUpperCase())) {
+            continue;
+          }
+          if (seen.add(model.medicationName)) {
+            popular.add(model.toEntity());
+          }
+          if (popular.length >= 20) break;
+        }
+        return popular;
+      },
+    );
+  }
 }
 
 class _ContentFilters {

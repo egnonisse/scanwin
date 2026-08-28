@@ -174,9 +174,6 @@ class _SearchBar extends StatelessWidget {
                   ),
                 ),
               ),
-              // Affordance « ceci ouvre une page » (pas un champ local).
-              const Icon(Icons.chevron_right,
-                  color: AppColors.textMuted, size: 20),
             ],
           ),
         ),

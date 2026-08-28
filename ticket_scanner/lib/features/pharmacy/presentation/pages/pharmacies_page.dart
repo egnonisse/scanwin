@@ -78,47 +78,52 @@ class _PharmaciesPageState extends State<PharmaciesPage> {
             runSpacing: 8,
             crossAxisAlignment: WrapCrossAlignment.center,
             children: [
-              // Champ de filtre commune : vraie zone cliquable avec bordure.
-              SizedBox(
-                width: 190,
-                child: DropdownButtonFormField<String>(
-                  initialValue:
-                      _communeFilter.isEmpty ? null : _communeFilter,
-                  isDense: true,
-                  decoration: InputDecoration(
-                    labelText: 'Commune',
-                    hintText: 'Toutes les communes',
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(AppRadii.card),
-                    ),
-                    contentPadding:
-                        const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              // Champ de filtre commune : pleine largeur.
+              DropdownButtonFormField<String>(
+                initialValue:
+                    _communeFilter.isEmpty ? null : _communeFilter,
+                isDense: true,
+                decoration: InputDecoration(
+                  labelText: 'Commune',
+                  hintText: 'Toutes les communes',
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(AppRadii.card),
                   ),
-                  items: [
-                    for (final c in communes)
-                      DropdownMenuItem(value: c, child: Text(c)),
-                  ],
-                  onChanged: (v) =>
-                      setState(() => _communeFilter = v ?? ''),
+                  contentPadding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                 ),
+                items: [
+                  for (final c in communes)
+                    DropdownMenuItem(value: c, child: Text(c)),
+                ],
+                onChanged: (v) => setState(() => _communeFilter = v ?? ''),
               ),
-              FilterChip(
-                label: const Text('De garde aujourd\'hui'),
-                selected: _showOnDutyOnly,
-                onSelected: (v) =>
-                    setState(() => _showOnDutyOnly = v),
-              ),
-              FilterChip(
-                avatar: Icon(
-                  Icons.near_me,
-                  size: 16,
-                  color: _showNearbyOnly
-                      ? Theme.of(context).colorScheme.primary
-                      : null,
-                ),
-                label: const Text('Près de chez moi'),
-                selected: _showNearbyOnly,
-                onSelected: (v) => setState(() => _showNearbyOnly = v),
+              Row(
+                children: [
+                  Expanded(
+                    child: FilterChip(
+                      label: const Text('De garde aujourd\'hui'),
+                      selected: _showOnDutyOnly,
+                      onSelected: (v) =>
+                          setState(() => _showOnDutyOnly = v),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: FilterChip(
+                      avatar: Icon(
+                        Icons.near_me,
+                        size: 16,
+                        color: _showNearbyOnly
+                            ? Theme.of(context).colorScheme.primary
+                            : null,
+                      ),
+                      label: const Text('Près de chez moi'),
+                      selected: _showNearbyOnly,
+                      onSelected: (v) => setState(() => _showNearbyOnly = v),
+                    ),
+                  ),
+                ],
               ),
             ],
           ),

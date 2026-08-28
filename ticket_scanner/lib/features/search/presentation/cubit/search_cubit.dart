@@ -22,6 +22,20 @@ class SearchCubit extends Cubit<SearchState> {
   StreamSubscription<List<PriceEntry>>? _priceSub;
   StreamSubscription<List<Medication>>? _medSub;
 
+  /// Charge les médicaments populaires (affichés par défaut).
+  void loadPopular() {
+    _priceSub?.cancel();
+    _medSub?.cancel();
+    emit(const SearchState.initial().copyWith(isSearching: true));
+    _priceSub = _repository.watchPopularMeds().listen(
+      (results) {
+        if (isClosed) return;
+        emit(state.copyWith(isSearching: false, results: results));
+      },
+      onError: (_) => _emitError(),
+    );
+  }
+
   /// Lance une recherche dans LES DEUX sources en parallèle :
   /// - priceEntries (médicaments AVEC prix issus des tickets)
   /// - medications (référentiel ANSM, sans prix)
@@ -31,7 +45,7 @@ class SearchCubit extends Cubit<SearchState> {
 
     final trimmed = query.trim();
     if (trimmed.length < 3) {
-      emit(const SearchState.initial());
+      loadPopular();
       return;
     }
 
