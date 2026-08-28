@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Page Pharmacies — après nettoyage des communes</title>
+<style>
+  :root{
+    --bg:#F8FAF9; --card:#FFFFFF; --ink:#1A2E28; --muted:#5C6F66;
+    --primary:#0E7A5F; --primary-soft:#E4F3EE;
+    --border:#E4EBE7; --radius:5px;
+    --shadow:0 1px 3px rgba(11,31,25,.06), 0 1px 2px rgba(11,31,25,.04);
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{
+    background:var(--bg); color:var(--ink);
+    font-family:Inter, system-ui, sans-serif;
+    display:flex; justify-content:center; padding:16px 0 40px; gap:24px; flex-wrap:wrap;
+  }
+  .phone{width:390px; max-width:100%; padding:0 16px;}
+
+  .appbar{display:flex; align-items:center; gap:10px; padding:8px 0 14px;}
+  .appbar .back{width:34px; height:34px; display:flex; align-items:center; justify-content:center;
+    background:var(--card); border-radius:var(--radius); box-shadow:var(--shadow); color:var(--ink);}
+  .appbar h1{font-family:Poppins, system-ui, sans-serif; font-size:15px; font-weight:600;}
+
+  /* Barre de recherche */
+  .searchbar{display:flex; align-items:center; gap:8px; background:var(--card);
+    border-radius:var(--radius); box-shadow:var(--shadow); padding:10px 14px; margin-bottom:12px;}
+  .searchbar .ph{color:var(--muted); font-size:14px; flex:1;}
+  .searchbar svg{width:20px; height:20px; stroke:var(--muted);}
+
+  /* Champ commune pleine largeur */
+  .field{background:var(--card); border:1px solid var(--border); border-radius:var(--radius);
+    padding:9px 12px; margin-bottom:10px; display:flex; justify-content:space-between;
+    align-items:center; cursor:pointer;}
+  .field .label{font-size:10.5px; color:var(--primary); font-weight:600; display:block;}
+  .field .value{font-size:13.5px; color:var(--ink); display:block; margin-top:1px;}
+  .field svg{width:18px; height:18px; stroke:var(--muted); flex-shrink:0;}
+
+  /* Chips côte à côte */
+  .chips{display:flex; gap:8px; margin-bottom:14px;}
+  .chip{flex:1; display:flex; align-items:center; justify-content:center; gap:6px;
+    padding:8px 6px; border-radius:999px; font-size:12px; font-weight:500;
+    background:var(--card); border:1px solid var(--border); color:var(--ink);}
+  .chip.on{background:var(--primary-soft); border-color:var(--primary); color:var(--primary); font-weight:600;}
+  .chip svg{width:15px; height:15px; stroke:currentColor;}
+
+  .count{font-size:11.5px; color:var(--muted); margin-bottom:10px;}
+
+  /* Liste pharmacies */
+  .pharma{background:var(--card); border-radius:var(--radius); box-shadow:var(--shadow);
+    padding:12px; margin-bottom:8px; display:flex; gap:10px; align-items:center;}
+  .pharma .ic{width:34px; height:34px; border-radius:var(--radius); background:var(--primary-soft);
+    display:flex; align-items:center; justify-content:center; color:var(--primary); flex-shrink:0;}
+  .pharma .ic svg{width:18px; height:18px; stroke:currentColor;}
+  .pharma .info{flex:1; min-width:0;}
+  .pharma .name{font-size:13px; font-weight:600;}
+  .pharma .meta{font-size:11px; color:var(--muted); margin-top:2px; display:flex; gap:8px; flex-wrap:wrap;}
+  .pharma .badge{font-size:10px; background:var(--primary-soft); color:var(--primary);
+    padding:2px 7px; border-radius:999px; font-weight:600;}
+  .pharma .dist{font-size:12px; font-weight:700; color:var(--primary); flex-shrink:0;}
+
+  /* Panneau latéral : liste des communes */
+  .panel{width:300px; background:var(--card); border-radius:var(--radius);
+    box-shadow:var(--shadow); padding:16px; align-self:flex-start; position:sticky; top:16px;}
+  .panel h2{font-family:Poppins, system-ui, sans-serif; font-size:14px; margin-bottom:6px;}
+  .panel .sub{font-size:11px; color:var(--muted); margin-bottom:12px; line-height:1.5;}
+  .panel .commune{display:flex; justify-content:space-between; padding:5px 0;
+    border-bottom:1px solid var(--border); font-size:12.5px;}
+  .panel .commune:last-child{border-bottom:none;}
+  .panel .n{color:var(--muted); font-size:11.5px;}
+</style>
+</head>
+<body>
+
+<!-- Téléphone : page pharmacies -->
+<div class="phone">
+  <div class="appbar">
+    <div class="back">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+    </div>
+    <h1>Pharmacies</h1>
+  </div>
+
+  <div class="searchbar">
+    <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+    <span class="ph">Rechercher une pharmacie…</span>
+  </div>
+
+  <!-- Champ commune pleine largeur -->
+  <div class="field" onclick="toggleDrop()">
+    <div>
+      <span class="label">COMMUNE</span>
+      <span class="value" id="selValue">Toutes les communes</span>
+    </div>
+    <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+  </div>
+
+  <!-- Dropdown -->
+  <div id="drop" style="display:none; max-height:220px; overflow:auto; background:var(--card);
+    border:1px solid var(--border); border-radius:var(--radius); box-shadow:var(--shadow);
+    margin:-4px 0 10px 0;">
+    <div style="padding:8px 12px; font-size:12.5px; border-bottom:1px solid var(--border); color:var(--muted);" onclick="pick('')">Toutes les communes</div>
+  </div>
+
+  <div class="chips">
+    <div class="chip" id="chipGarde" onclick="tgl('chipGarde')">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+      De garde aujourd'hui
+    </div>
+    <div class="chip" id="chipProche" onclick="tgl('chipProche')">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+      Près de chez moi
+    </div>
+  </div>
+
+  <div class="count" id="count">815 pharmacies — Abidjan et intérieur</div>
+
+  <div class="pharma">
+    <div class="ic">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.5 20.5H3.5a1 1 0 0 1-1-1V6.7a1 1 0 0 1 .5-.86l8-4a1 1 0 0 1 1 0l8 4a1 1 0 0 1 .5.86v12.8a1 1 0 0 1-1 1h-7"/><path d="M14 20.5h6M12.5 7v3M9.5 10v3"/></svg>
+    </div>
+    <div class="info">
+      <div class="name">Pharmacie des Lagunes</div>
+      <div class="meta"><span>Marcory</span><span>· 1,2 km</span></div>
+    </div>
+    <span class="badge">De garde</span>
+  </div>
+
+  <div class="pharma">
+    <div class="ic">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.5 20.5H3.5a1 1 0 0 1-1-1V6.7a1 1 0 0 1 .5-.86l8-4a1 1 0 0 1 1 0l8 4a1 1 0 0 1 .5.86v12.8a1 1 0 0 1-1 1h-7"/><path d="M14 20.5h6M12.5 7v3M9.5 10v3"/></svg>
+    </div>
+    <div class="info">
+      <div class="name">Pharmacie du Pont</div>
+      <div class="meta"><span>Adjamé</span><span>· 2,4 km</span></div>
+    </div>
+  </div>
+
+  <div class="pharma">
+    <div class="ic">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.5 20.5H3.5a1 1 0 0 1-1-1V6.7a1 1 0 0 1 .5-.86l8-4a1 1 0 0 1 1 0l8 4a1 1 0 0 1 .5.86v12.8a1 1 0 0 1-1 1h-7"/><path d="M14 20.5h6M12.5 7v3M9.5 10v3"/></svg>
+    </div>
+    <div class="info">
+      <div class="name">Pharmacie Sainte-Marie</div>
+      <div class="meta"><span>Cocody</span><span>· 3,1 km</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- Panneau : liste réelle des communes -->
+<div class="panel">
+  <h2>Communes après nettoyage</h2>
+  <div class="sub">39 communes — toutes dans la liste officielle DGDDL (201 communes de la CI). 226 pharmacies non résolues : commune vide, adresse conservée dans le champ address.</div>
+  <div id="communes"></div>
+</div>
+
+<script>
+  const communes = [
+    ["Abobo",46],["Aboisso",5],["Adiaké",3],["Adjamé",39],["Adzopé",6],
+    ["Agboville",6],["Agnibilékro",5],["Alépé",4],["Anyama",17],["Attiegouakro",1],
+    ["Attécoubé",14],["Bingerville",10],["Bonoua",3],["Bouaflé",6],["Bouaké",19],
+    ["Cocody",122],["Dabou",5],["Daloa",21],["Danané",3],["Divo",11],
+    ["Diégonéfla",5],["Duékoué",6],["Grand-Bassam",17],["Guiglo",5],["Hiré",3],
+    ["Issia",6],["Katiola",3],["Korhogo",15],["Koumassi",4],["Man",11],
+    ["Marcory",28],["Odienné",3],["Port-Bouët",15],["San-Pédro",25],["Sinfra",5],
+    ["Songon",5],["Soubré",7],["Tiassalé",5],["Yopougon",75]
+  ];
+  const panel = document.getElementById('communes');
+  communes.forEach(([name, n]) => {
+    const row = document.createElement('div');
+    row.className = 'commune';
+    row.innerHTML = `<span>${name}</span><span class="n">${n}</span>`;
+    panel.appendChild(row);
+  });
+
+  const drop = document.getElementById('drop');
+  communes.forEach(([name]) => {
+    const item = document.createElement('div');
+    item.style.cssText = 'padding:8px 12px;font-size:12.5px;cursor:pointer;';
+    item.onmouseover = () => item.style.background = '#E4F3EE';
+    item.onmouseout = () => item.style.background = '';
+    item.onclick = () => pick(name);
+    item.textContent = name;
+    drop.appendChild(item);
+  });
+
+  function toggleDrop(){ drop.style.display = drop.style.display === 'none' ? 'block' : 'none'; }
+  function pick(name){
+    document.getElementById('selValue').textContent = name || 'Toutes les communes';
+    drop.style.display = 'none';
+  }
+  function tgl(id){
+    const el = document.getElementById(id);
+    el.classList.toggle('on');
+  }
+</script>
+</body>
+</html>
