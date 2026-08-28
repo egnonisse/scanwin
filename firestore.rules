@@ -34,7 +34,14 @@ service cloud.firestore {
       allow create, update, delete: if isAdmin();
     }
 
-    // Candidats de fusion de pharmacies (détection automatique) :
+    // Catalogue parapharmacie : lecture par les utilisateurs connectés,
+    // écriture par l'admin (imports).
+    match /catalogProducts/{productId} {
+      allow read: if request.auth != null;
+      allow create, update, delete: if isAdmin();
+    }
+
+    // Candidats de fusion de pharmacies (détection automatique).
     // lus et gérés par l'admin uniquement (validation dans le dashboard).
     match /mergeCandidates/{candidateId} {
       allow read, write: if isAdmin();
