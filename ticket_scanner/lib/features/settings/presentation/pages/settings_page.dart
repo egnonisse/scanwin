@@ -1,8 +1,12 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:cloud_functions/cloud_functions.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:share_plus/share_plus.dart';
 
+import '../../../../core/theme/app_theme.dart';
 import '../../../legal/presentation/widgets/legal_section.dart';
 import '../cubit/settings_cubit.dart';
 import '../cubit/settings_state.dart';
@@ -61,6 +65,9 @@ class SettingsPage extends StatelessWidget {
                 ),
               ],
               const SizedBox(height: 20),
+              // Parrainage : code perso + saisie d'un code (points bonus).
+              const _ReferralSection(),
+              const SizedBox(height: 20),
               // Partager l'app avec l'entourage (bouche-à-oreille).
               Card(
                 child: ListTile(
@@ -107,6 +114,206 @@ class SettingsPage extends StatelessWidget {
           );
         },
       ),
+    );
+  }
+}
+
+/// Section Parrainage : code perso + partage + saisie d'un code.
+/// Le bonus (parrain ET filleul) est crédité au PREMIER scan du filleul.
+class _ReferralSection extends StatefulWidget {
+  const _ReferralSection();
+
+  @override
+  State<_ReferralSection> createState() => _ReferralSectionState();
+}
+
+class _ReferralSectionState extends State<_ReferralSection> {
+  final _codeController = TextEditingController();
+  bool _submitting = false;
+
+  @override
+  void dispose() {
+    _codeController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _activateCode() async {
+    final code = _codeController.text.trim().toUpperCase();
+    if (code.isEmpty || _submitting) return;
+    setState(() => _submitting = true);
+    try {
+      final callable = FirebaseFunctions.instance
+          .httpsCallable('activateReferral');
+      final result = await callable.call({'code': code});
+      final sponsorName = (result.data as Map?)?['sponsorName'] ?? 'ton parrain';
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Bienvenue ! Tu es parrainé par $sponsorName. '
+            'Le bonus arrive à ton premier scan.')),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      final message = _friendlyError(e);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(message)),
+      );
+    } finally {
+      if (mounted) setState(() => _submitting = false);
+    }
+  }
+
+  String _friendlyError(Object e) {
+    final text = e.toString();
+    if (text.contains('not-found')) return 'Code introuvable. Vérifie et réessaie.';
+    if (text.contains('failed-precondition')) {
+      return text.contains('propres')
+          ? 'Tu ne peux pas utiliser ton propre code.'
+          : 'Tu as déjà un parrain.';
+    }
+    if (text.contains('invalid-argument')) return 'Code invalide.';
+    return 'Impossible pour le moment. Réessaie plus tard.';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null) return const SizedBox.shrink();
+    final userRef = FirebaseFirestore.instance.collection('users').doc(uid);
+
+    return StreamBuilder<DocumentSnapshot>(
+      stream: userRef.snapshots(),
+      builder: (context, snapshot) {
+        final data = snapshot.data?.data() as Map<String, dynamic>? ?? {};
+        final code = (data['referralCode'] as String?) ?? '';
+        final referredByName = (data['referredByName'] as String?) ?? '';
+        final activated = data['referralActivated'] == true;
+
+        return Card(
+          child: Padding(
+            padding: const EdgeInsets.all(14),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    const Icon(Icons.card_giftcard, color: AppColors.primary),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Parrainage',
+                      style: Theme.of(context)
+                          .textTheme
+                          .titleSmall
+                          ?.copyWith(fontWeight: FontWeight.w600),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 10),
+                Text(
+                  'Ton code parrain :',
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+                const SizedBox(height: 4),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 8),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFE4F3EE),
+                          borderRadius: BorderRadius.circular(AppRadii.field),
+                        ),
+                        child: Text(
+                          code.isEmpty ? '…' : code,
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 3,
+                            fontSize: 16,
+                            color: AppColors.primary,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    IconButton(
+                      tooltip: 'Partager mon code',
+                      icon: const Icon(Icons.share, color: AppColors.primary),
+                      onPressed: code.isEmpty
+                          ? null
+                          : () => SharePlus.instance.share(
+                                ShareParams(
+                                  text: 'PharmaScan — Comparez. Payez juste.\n\n'
+                                      'Utilise mon code de parrainage '
+                                      '$code pour gagner des points bonus '
+                                      'à ton premier scan.\n\n'
+                                      'Télécharge ici : '
+                                      'https://play.google.com/store/apps/details'
+                                      '?id=com.softhubapp.scanapp',
+                                ),
+                              ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  'Chaque filleul qui scanne son premier ticket rapporte '
+                  'des points bonus à vous deux.',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: AppColors.textMuted,
+                      ),
+                ),
+                const SizedBox(height: 12),
+                if (referredByName.isNotEmpty) ...[
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF1F4F2),
+                      borderRadius: BorderRadius.circular(AppRadii.card),
+                    ),
+                    child: Text(
+                      activated
+                          ? 'Parrainage validé — merci $referredByName !'
+                          : 'Parrainé par $referredByName — le bonus arrive '
+                              'à ton premier scan.',
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
+                  ),
+                ] else ...[
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextField(
+                          controller: _codeController,
+                          textCapitalization: TextCapitalization.characters,
+                          decoration: const InputDecoration(
+                            hintText: 'Code de parrainage',
+                            isDense: true,
+                            border: OutlineInputBorder(),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      FilledButton(
+                        onPressed: _submitting ? null : _activateCode,
+                        child: _submitting
+                            ? const SizedBox(
+                                width: 16,
+                                height: 16,
+                                child: CircularProgressIndicator(
+                                    strokeWidth: 2),
+                              )
+                            : const Text('Valider'),
+                      ),
+                    ],
+                  ),
+                ],
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 }

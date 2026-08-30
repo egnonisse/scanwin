@@ -51,6 +51,15 @@ try:
 except Exception as e:
     stats['catalogInStock'] = -1
 
+try:
+    referrals = db.collection('users') \
+        .where(filter=firestore.FieldFilter('referralActivated', '==', True)) \
+        .count().get()
+    stats['referralsActivated'] = referrals[0][0].value
+    print(f'  {"referralsActivated":20s} {stats["referralsActivated"]}')
+except Exception as e:
+    stats['referralsActivated'] = -1
+
 stats['updatedAt'] = firestore.SERVER_TIMESTAMP
 db.collection('stats').document('global').set(stats, merge=True)
 print('\n✅ stats/global écrit.')

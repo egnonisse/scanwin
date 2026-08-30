@@ -15,6 +15,7 @@ admin.initializeApp();
 const db = getFirestore();
 
 const DEFAULT_POINTS_PER_RECEIPT = 10;
+const DEFAULT_REFERRAL_REWARD = 20;
 
 /** Lit la config des points (pointsConfig/default) — fallback 10. */
 async function loadPointsConfig() {
@@ -28,6 +29,20 @@ async function loadPointsConfig() {
     logger.error('loadPointsConfig failed', e);
   }
   return DEFAULT_POINTS_PER_RECEIPT;
+}
+
+/** Lit la récompense de parrainage (pointsConfig/default) — fallback 20. */
+async function loadReferralReward() {
+  try {
+    const doc = await db.collection('pointsConfig').doc('default').get();
+    if (doc.exists) {
+      const value = Number(doc.data().referralReward);
+      if (Number.isFinite(value) && value > 0) return Math.round(value);
+    }
+  } catch (e) {
+    logger.error('loadReferralReward failed', e);
+  }
+  return DEFAULT_REFERRAL_REWARD;
 }
 
 /** Normalise un nom (médicament, pharmacie) : minuscules, sans accents. */
@@ -243,6 +258,27 @@ exports.submitReceipt = onCall(async (request) => {
         // contributeur (Bronze/Argent/Or) affiché dans la home.
         contributions: FieldValue.increment(1),
       });
+
+      // ── Parrainage : au PREMIER scan validé, créditer le filleul ET son
+      // parrain (anti-fraude par design : un compte vide ne rapporte rien).
+      const meDoc = await transaction.get(userRef);
+      if (meDoc.exists && meDoc.data().referredBy && !meDoc.data().referralActivated) {
+        const sponsorId = meDoc.data().referredBy;
+        const referralReward = await loadReferralReward();
+        transaction.update(userRef, {
+          referralActivated: true,
+          points: FieldValue.increment(referralReward),
+        });
+        transaction.update(db.collection('users').doc(sponsorId), {
+          points: FieldValue.increment(referralReward),
+        });
+        transaction.set(db.collection('users').doc(sponsorId).collection('pointsEvents').doc(), {
+          pointsAdded: referralReward,
+          reason: 'Parrainage',
+          referralUid: userId,
+          createdAt: FieldValue.serverTimestamp(),
+        });
+      }
 
       transaction.set(userRef.collection('pointsEvents').doc(), {
         pointsAdded: pointsAwarded,
@@ -485,3 +521,54 @@ exports.parseReceiptWithAI = onCall(
     };
   }
 );
+
+/**
+ * Parrainage : le filleul saisit un code → la CF vérifie et lie les comptes.
+ * Anti-fraude : un seul parrain par compte, pas d'auto-parrainage, et les
+ * points ne sont crédités qu'au PREMIER scan du filleul (submitReceipt).
+ */
+exports.activateReferral = onCall(async (request) => {
+  try {
+    const uid = request.auth?.uid;
+    if (!uid) throw new HttpsError('unauthenticated', 'Connexion requise.');
+
+    const code = String(request.data?.code || '').trim().toUpperCase();
+    if (!/^[A-Z0-9]{4,10}$/.test(code)) {
+      throw new HttpsError('invalid-argument', 'Code invalide.');
+    }
+
+    // Cherche le parrain par son code.
+    const match = await db.collection('users')
+      .where('referralCode', '==', code)
+      .limit(1)
+      .get();
+    if (match.empty) {
+      throw new HttpsError('not-found', 'Code introuvable.');
+    }
+    const sponsorId = match.docs[0].id;
+    if (sponsorId === uid) {
+      throw new HttpsError('failed-precondition', "Tu ne peux pas utiliser ton propre code.");
+    }
+
+    // Le filleul ne peut pas changer de parrain.
+    const meRef = db.collection('users').doc(uid);
+    const meDoc = await meRef.get();
+    if (meDoc.exists && meDoc.data().referredBy) {
+      throw new HttpsError('failed-precondition', 'Tu as déjà un parrain.');
+    }
+
+    const sponsorData = match.docs[0].data();
+    const sponsorName = sponsorData.displayName || sponsorData.name || 'ton parrain';
+    await meRef.set({
+      referredBy: sponsorId,
+      referredByName: sponsorName,
+      referralActivated: false,
+    }, { merge: true });
+
+    return { success: true, sponsorName };
+  } catch (error) {
+    if (error instanceof HttpsError) throw error;
+    logger.error('activateReferral failed', error);
+    throw new HttpsError('internal', 'Erreur inattendue.');
+  }
+});

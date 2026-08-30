@@ -49,6 +49,7 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
       'medications': global['medications'] ?? 0,
       'catalogProducts': global['catalogProducts'] ?? 0,
       'catalogInStock': global['catalogInStock'] ?? 0,
+      'referralsActivated': global['referralsActivated'] ?? 0,
       'hiddenMeds': ((configData['hiddenMedications'] as List?) ?? []).length,
       'disabledCats':
           ((configData['disabledCategories'] as List?) ?? []).length,
@@ -126,6 +127,9 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
                 _StatCard(
                     label: 'Catégories désactivées',
                     value: '${s['disabledCats'] ?? 0}'),
+                _StatCard(
+                    label: 'Filleuls parrainés (1er scan)',
+                    value: '${s['referralsActivated'] ?? 0}'),
               ],
             ),
             const SizedBox(height: 16),

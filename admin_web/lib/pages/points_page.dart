@@ -16,6 +16,7 @@ class PointsPage extends StatefulWidget {
 class _PointsPageState extends State<PointsPage> {
   final _configController = TextEditingController();
   final _bronzeController = TextEditingController();
+  final _referralController = TextEditingController();
   final _silverController = TextEditingController();
   final _goldController = TextEditingController();
   bool _loading = true;
@@ -37,6 +38,8 @@ class _PointsPageState extends State<PointsPage> {
     setState(() {
       _configController.text =
           (data['pointsPerReceipt'] as num?)?.toString() ?? '10';
+      _referralController.text =
+          (data['referralReward'] as num?)?.toString() ?? '20';
       _bronzeController.text =
           (data['bronzeThreshold'] as num?)?.toString() ?? '50';
       _silverController.text =
@@ -49,10 +52,12 @@ class _PointsPageState extends State<PointsPage> {
 
   Future<void> _saveConfig() async {
     final value = int.tryParse(_configController.text.trim());
+    final referral = int.tryParse(_referralController.text.trim());
     final bronze = int.tryParse(_bronzeController.text.trim());
     final silver = int.tryParse(_silverController.text.trim());
     final gold = int.tryParse(_goldController.text.trim());
     if (value == null || value <= 0 ||
+        referral == null || referral <= 0 ||
         bronze == null || silver == null || gold == null) {
       _setStatus('Valeurs invalides (entiers positifs requis).', error: true);
       return;
@@ -69,12 +74,14 @@ class _PointsPageState extends State<PointsPage> {
           .doc('default')
           .set({
         'pointsPerReceipt': value,
+        'referralReward': referral,
         'bronzeThreshold': bronze,
         'silverThreshold': silver,
         'goldThreshold': gold,
         'updatedAt': FieldValue.serverTimestamp(),
       });
       _setStatus('✅ Config enregistrée (points/scan = $value, '
+          'parrainage = $referral, '
           'niveaux $bronze/$silver/$gold). L\'app met à jour les niveaux '
           'automatiquement.');
     } catch (e) {
@@ -128,6 +135,19 @@ class _PointsPageState extends State<PointsPage> {
                     border: OutlineInputBorder(),
                     helperText:
                         'Lu par la Cloud Function à chaque scan (fallback 10).',
+                  ),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: _referralController,
+                  enabled: !_loading,
+                  keyboardType: TextInputType.number,
+                  decoration: const InputDecoration(
+                    labelText: 'Points de parrainage (bonus)',
+                    border: OutlineInputBorder(),
+                    helperText:
+                        'Crédités au parrain ET au filleul au premier scan '
+                        'du filleul (fallback 20).',
                   ),
                 ),
                 const SizedBox(height: 12),

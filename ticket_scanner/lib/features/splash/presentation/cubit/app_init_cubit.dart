@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -18,6 +19,14 @@ class AppInitCubit extends Cubit<AppInitState> {
         super(const AppInitState.initial());
 
   final SettingsCubit _settingsCubit;
+
+  /// Code de parrainage (généré une fois, même alphabet sans ambiguïtés).
+  String _newReferralCode() {
+    const alphabet = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
+    final rand = Random.secure();
+    return List.generate(6, (_) => alphabet[rand.nextInt(alphabet.length)])
+        .join();
+  }
 
   Future<void> init() async {
     emit(state.copyWith(status: AppInitStatus.loading, errorMessage: null));
@@ -64,6 +73,7 @@ class AppInitCubit extends Cubit<AppInitState> {
               'points': 0,
               'currencyCode': _settingsCubit.state.currencyCode,
               'createdAt': FieldValue.serverTimestamp(),
+              'referralCode': _newReferralCode(),
             });
             return;
           }
@@ -75,6 +85,9 @@ class AppInitCubit extends Cubit<AppInitState> {
           }
           if (!data.containsKey('points')) {
             tx.update(userRef, {'points': 0});
+          }
+          if ((data['referralCode'] as String? ?? '').isEmpty) {
+            tx.update(userRef, {'referralCode': _newReferralCode()});
           }
         });
       } on FirebaseException {
