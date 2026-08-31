@@ -63,6 +63,12 @@ jobs:
       - name: Run tests
         run: flutter test
 
+      # Cache Gradle : réutilise les artefacts Kotlin/Maven entre les runs
+      # (moins de requêtes réseau → évite les 429 de Maven Central + builds
+      # plus rapides).
+      - name: Setup Gradle cache
+        uses: gradle/actions/setup-gradle@v4
+
       - name: Build & Upload (${{ github.event.inputs.track || 'internal' }})
         env:
           FASTLANE_XCODEBUILD_SETTINGS_TIMEOUT: 120
